@@ -18,7 +18,6 @@ class Display extends React.Component {
     try {
       config = require(`../slideConfigs/${configName}.yaml`)   
     } catch {
-      console.error(`error loading config: ${configName}`)
       config = require(`../slideConfigs/${DEFAULT_CONFIG}`)   
     }
 
