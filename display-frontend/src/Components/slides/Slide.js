@@ -50,7 +50,6 @@ class Slide extends React.Component {
 
     const slideContent = this.content()
 
-    // console.log(`rendering slide: ${JSON.stringify({ displayed, slideContent: String(slideContent) })}`)
     if (!displayed) return null
 
     return (

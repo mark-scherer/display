@@ -100,3 +100,8 @@ html, body, #root, .App {
     transform: rotate(0);
   }
 }
+
+#driving-map {
+  min-height: 100%;
+  height: 100%;
+}

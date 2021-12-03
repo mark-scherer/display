@@ -1,8 +1,18 @@
 # slide config for dev
 ---
-duration: 10
+duration: 1000
 slides:
-  - type: Message
-    msg: 'test message from the config!'
-  - type: Message
-    msg: 'another message.'
+  # - type: Message
+  #   msg: 'test message from the config!'
+  # - type: Message
+  #   msg: 'another message.'
+  - type: DrivingMap
+    stops:
+      - location: San Francisco, CA
+      - location: Denver, CO
+      - location: Louisville, KY
+      - location: Nashville, TN
+      - location: Austin, TX
+      - location: Flagstaff, AZ
+      - location: San Diego, CA
+      - location: San Francisco, CA
