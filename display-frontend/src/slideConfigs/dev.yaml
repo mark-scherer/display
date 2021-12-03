@@ -1,3 +1,8 @@
 # slide config for dev
 ---
-hello: 'dev!'
+slide_duration: 5
+slides:
+  - type: Message
+    msg: 'test message from the config!'
+  - type: Message
+    msg: 'another message.'

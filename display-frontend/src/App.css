@@ -1,3 +1,5 @@
+/* boilerplate styling */
+
 .App {
   text-align: center;
 }
@@ -34,5 +36,67 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* custom styling */
+
+/* allow 100% height styling */
+html, body, #root, .App {
+  height: 100%;
+}
+
+/* display structure */
+.display {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+/* title styling */
+.title {
+  padding: 5px 50px;
+  background: lightgray;
+  font-size: xx-large;
+  text-align: left;
+}
+
+.slide-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* target all slides like this avoid enforcing a class added to each slide component */
+.slide {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* specific slide styling */
+.message-slide {
+  animation: flip-message 0.25s ease;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  font-size: xx-large;
+}
+@keyframes flip-message {
+  0% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(0);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+  100% {
+    transform: rotate(0);
   }
 }
