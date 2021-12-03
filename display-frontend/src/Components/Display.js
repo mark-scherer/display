@@ -28,7 +28,8 @@ class Display extends React.Component {
       config = require(`../slideConfigs/${DEFAULT_CONFIG}`)   
     }
 
-    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field slides`)
+    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: duration`)
+    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: slides`)
     if (!config.slides.length) throw Error(`config ${configName} has no slides`)
     config.slides.forEach((slideConfig, index) => {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
@@ -44,7 +45,7 @@ class Display extends React.Component {
       if (currentSlideIndex >= config.slides.length) currentSlideIndex = 0
 
       this.setState({ currentSlideIndex })
-    }, 5000)
+    }, config.duration*1000)
 
     this.state = {
       configName,

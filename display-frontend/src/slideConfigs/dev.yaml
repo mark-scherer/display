@@ -1,6 +1,6 @@
 # slide config for dev
 ---
-slide_duration: 5
+duration: 10
 slides:
   - type: Message
     msg: 'test message from the config!'
