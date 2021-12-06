@@ -7,12 +7,82 @@ slides:
   # - type: Message
   #   msg: 'another message.'
   - type: DrivingMap
+    title: 'Mark & Yoojin Summer 2021!'
     stops:
       - location: San Francisco, CA
+        labelPosition: 'west'
+        labelText: 'START: SF, 8/6'
+      - location: Truckee, CA
+        locationText: Truckee
+        labelPosition: 'northwest'
+        startDate: 8/6
+      - location: Winnemucca, NV
+        locationText: Winnemucca
+        labelPosition: 'north'
+        startDate: 8/6
+      - location: Salt Lake City, UT
+        locationText: SLC
+        labelPosition: 'south'
+        startDate: 8/7
       - location: Denver, CO
-      - location: Louisville, KY
+        locationText: Denver
+        labelPosition: 'northeast'
+        startDate: 8/8
+        endDate: 8/28
+      - location: Kuttawa, KY
+        locationText: Kuttawa
+        labelPosition: 'southwest'
+        startDate: 8/28
+      - location: Henderson, KY
+        locationText: Henderson
+        labelPosition: 'north'
+        startDate: 8/29
+      - location: Prospect, KY
+        locationText: Louisville
+        labelPosition: 'east'
+        startDate: 8/29
+        endDate: 9/3
       - location: Nashville, TN
+        locationText: Nashville
+        labelPosition: 'east'
+        startDate: 9/3
+        endDate: 9/11
+      - location: Dallas, TX
+        locationText: Dallas
+        labelPosition: 'northwest'
+        startDate: 9/11
       - location: Austin, TX
+        locationText: Austin
+        labelPosition: 'south'
+        startDate: 9/12
+        endDate: 10/2
+      - location: White Sands, NM
+        locationText: White Sands NP
+        labelPosition: 'east'
+        startDate: 10/2
       - location: Flagstaff, AZ
+        locationText: Flagstaff
+        labelPosition: 'northeast'
+        startDate: 10/3
+        endDate: 10/8
+      - location: Grand Canyon South Rim Park Headquarters
+        locationText: Grand Canyon NP
+        labelPosition: 'west'
+        startDate: 10/8
+      - location: Phoenix, AZ
+        locationText: Phonenix
+        labelPosition: 'northwest'
+        startDate: 10/8
       - location: San Diego, CA
+        locationText: SD
+        labelPosition: 'southwest'
+        startDate: 10/9
+        endDate: 10/16
+      - location: Arroyo Grande, CA
+        locationText: Arroyo Grande
+        labelPosition: 'west'
+        startDate: 10/17
+        endDate: 10/22
       - location: San Francisco, CA
+        labelPosition: 'east'
+        labelText: 'END: SF, 10/22'

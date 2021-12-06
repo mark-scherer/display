@@ -101,7 +101,22 @@ html, body, #root, .App {
   }
 }
 
+.driving-map-container {
+  min-height: 100%;
+  height: 100%;
+  position: relative;
+}
 #driving-map {
   min-height: 100%;
   height: 100%;
+}
+.driving-map-title {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: white;
+  padding: 5px 10px;
+  font-size: x-large;
+  border-radius: 5px;
+  opacity: 85%;
 }
