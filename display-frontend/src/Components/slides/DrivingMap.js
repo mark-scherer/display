@@ -40,10 +40,12 @@ class DrivingMap extends Slide {
     }
   }
 
-  /* create MarkerOptions json for custom marker for given stop
+  /* create MarkerOptions jsons for custom marker for given stop
+    - returns list of jsons to create as markers
     - see MarkOptions docs: https://developers.google.com/maps/documentation/javascript/reference/marker#MarkerOptions
     - notes:
-      - icon path is drawn w/ center at (0, 0) so label is automatically centered within the icon
+      - paths are drawn w/ center at (0, 0) so label is automatically centered within the icon
+      - labelMarker is offset using labelMarkerAnchor
     - stopConfig options:
       - location: textual location to send to directions API
       - labelPosition: cardinal direction from location in which to place label
@@ -53,73 +55,113 @@ class DrivingMap extends Slide {
     // marker constants
       // distances are in icon.path's coordinate system
     const DEFAULT_LABEL_POSITON = 'north'
-    const LABEL_BOX_MARGIN = 10 // margin between marker point and label box
-    const MIN_LABEL_WIDTH = 100
-    const PX_PER_CHAR = 8 // jank way to set marker width from textual label length
-    const MARKER_RADIUS = 5
+    const DEFAULT_TYPE = 'major'
     const MARKER_COLORS = [
       // 'lightblue',
       // 'darkseagreen',
       // 'wheat'
       'lightgray'
     ]
+
+    const TYPE_CONFIGS = {
+      major: {
+        MIN_LABEL_WIDTH: 50,
+        LABEL_PX_PER_CHAR: 10,
+        LABEL_MARKER_HEIGHT: 30,
+        LABEL_MARKER_MARGIN: 10,
+        LABEL_FONT_SIZE: '18px',
+        LABEL_FONT_WEIGHT: 'bold',
+        POINT_MARKER_RADIUS: 3,
+        POINT_MARKER_STROKE_WEIGHT: 3
+      },
+      minor: {
+        MIN_LABEL_WIDTH: 50,
+        LABEL_PX_PER_CHAR: 7.5,
+        LABEL_MARKER_HEIGHT: 20,
+        LABEL_MARKER_MARGIN: 8,
+        LABEL_FONT_SIZE: '12px',
+        LABEL_FONT_WEIGHT: 'normal',
+        POINT_MARKER_RADIUS: 2,
+        POINT_MARKER_STROKE_WEIGHT: 1.5
+      }
+    }
+
+    // setup defaults
+    if (!stopConfig.type) stopConfig.type = DEFAULT_TYPE
+    if (!stopConfig.labelPosition) stopConfig.labelPosition = DEFAULT_LABEL_POSITON
+    
+    const typeConfig = TYPE_CONFIGS[stopConfig.type]
+    if (!typeConfig) throw Error(`unsupported stopConfig.type: ${stopConfig.type}`)
     
     const dateText = stopConfig.startDate ?
       `${stopConfig.startDate}` + (stopConfig.endDate ?
         ` - ${stopConfig.endDate}` : '') + ': '
       : ''
-    const label = stopConfig.labelText || `${dateText}${stopConfig.locationText || stopConfig.location}`
-
+    // const labelText = stopConfig.labelText || `${dateText}${stopConfig.locationText || stopConfig.location}`
+    const labelText = stopConfig.labelText || stopConfig.locationText || stopConfig.location
 
     // total width, height of drawn svg in context of icon.path, icon.anchor
-    const width = Math.max(MIN_LABEL_WIDTH, label.length*PX_PER_CHAR) // jank but rough approximation of needed marker width
-    const height = 25
+    const width = Math.max(typeConfig.MIN_LABEL_WIDTH, labelText.length*typeConfig.LABEL_PX_PER_CHAR) // jank but rough approximation of needed marker width
+    const height = typeConfig.LABEL_MARKER_HEIGHT
 
-    // anchor is (left, up) translation applied to path
-    if (!stopConfig.labelPosition) stopConfig.labelPosition = DEFAULT_LABEL_POSITON
+    const labelMarkerMargin = stopConfig.labelMarkerMargin || typeConfig.LABEL_MARKER_MARGIN
+    const northOffest = height/2 + labelMarkerMargin,
+      eastOffest = -1*(width/2 + labelMarkerMargin),
+      southOffset = -1*(height/2 + labelMarkerMargin),
+      westOffset = width/2 + labelMarkerMargin
 
-    const northOffest = height/2 + LABEL_BOX_MARGIN,
-      eastOffest = -1*(width/2 + LABEL_BOX_MARGIN),
-      southOffset = -1*(height/2 + LABEL_BOX_MARGIN),
-      westOffset = width/2 + LABEL_BOX_MARGIN
-
-    let anchor
-    if (stopConfig.labelPosition === 'north') anchor = new google.maps.Point(0, northOffest)
-    else if (stopConfig.labelPosition === 'northeast') anchor = new google.maps.Point(eastOffest, northOffest)
-    else if (stopConfig.labelPosition === 'east') anchor = new google.maps.Point(eastOffest, 0)
-    else if (stopConfig.labelPosition === 'southeast') anchor = new google.maps.Point(eastOffest, southOffset)
-    else if (stopConfig.labelPosition === 'south') anchor = new google.maps.Point(0, southOffset)
-    else if (stopConfig.labelPosition === 'southwest') anchor = new google.maps.Point(westOffset, southOffset)
-    else if (stopConfig.labelPosition === 'west') anchor = new google.maps.Point(westOffset, 0)
-    else if (stopConfig.labelPosition === 'northwest') anchor = new google.maps.Point(westOffset, northOffest)
+    // anchor is (left, up) translation applied to path in relation to location
+    let labelMarkerAnchor
+    if (stopConfig.labelPosition === 'north') labelMarkerAnchor = new google.maps.Point(0, northOffest)
+    else if (stopConfig.labelPosition === 'northeast') labelMarkerAnchor = new google.maps.Point(eastOffest, northOffest)
+    else if (stopConfig.labelPosition === 'east') labelMarkerAnchor = new google.maps.Point(eastOffest, 0)
+    else if (stopConfig.labelPosition === 'southeast') labelMarkerAnchor = new google.maps.Point(eastOffest, southOffset)
+    else if (stopConfig.labelPosition === 'south') labelMarkerAnchor = new google.maps.Point(0, southOffset)
+    else if (stopConfig.labelPosition === 'southwest') labelMarkerAnchor = new google.maps.Point(westOffset, southOffset)
+    else if (stopConfig.labelPosition === 'west') labelMarkerAnchor = new google.maps.Point(westOffset, 0)
+    else if (stopConfig.labelPosition === 'northwest') labelMarkerAnchor = new google.maps.Point(westOffset, northOffest)
     else throw Error(`unrecognized labelPosition: ${JSON.stringify({ stop: stopConfig.location, labelPosition: stopConfig.labelPosition })}`)
 
-    // draw a width x height rectange centered at (0, 0)
-    const labelBox = `M -${width/2} -${height/2} h ${width} v ${height} h -${width} Z`
-    const markerSvg = `m -${MARKER_RADIUS} -${MARKER_RADIUS} h ${2*MARKER_RADIUS} v ${2* MARKER_RADIUS} h -${2*MARKER_RADIUS} z`
-    let markerPoint
-    if (stopConfig.labelPosition === 'north') markerPoint = `M 0 ${northOffest} ${markerSvg}`
-    else if (stopConfig.labelPosition === 'northeast') markerPoint = `M ${eastOffest} ${northOffest} ${markerSvg}`
-    else if (stopConfig.labelPosition === 'east') markerPoint = `M ${eastOffest} 0 ${markerSvg}`
-    else if (stopConfig.labelPosition === 'southeast') markerPoint = `M ${eastOffest} ${southOffset} ${markerSvg}`
-    else if (stopConfig.labelPosition === 'south') markerPoint = `M 0 ${southOffset} ${markerSvg}`
-    else if (stopConfig.labelPosition === 'southwest') markerPoint = `M ${westOffset} ${southOffset} ${markerSvg}`
-    else if (stopConfig.labelPosition === 'west')  markerPoint = `M ${westOffset} 0 ${markerSvg}`
-    else if (stopConfig.labelPosition === 'northwest')  markerPoint = `M ${westOffset} ${northOffest} ${markerSvg}`
-    else throw Error(`unrecognized labelPosition: ${JSON.stringify({ stop: stopConfig.location, labelPosition: stopConfig.labelPosition })}`)
-    const path = `${labelBox} ${markerPoint}`
+    const labelMarkerPath = `M -${width/2} -${height/2} h ${width} v ${height} h -${width} Z` // width x height rectange centered at (0, 0)
+    const pointMarkerPath = `m -${typeConfig.POINT_MARKER_RADIUS} -${typeConfig.POINT_MARKER_RADIUS} h ${2*typeConfig.POINT_MARKER_RADIUS} v ${2*typeConfig.POINT_MARKER_RADIUS} h -${2*typeConfig.POINT_MARKER_RADIUS} z` // 2*typeConfig.POINT_MARKER_RADIUS square
+    // const pointMarkerPath = `
+    //   m -${typeConfig.POINT_MARKER_RADIUS},0
+    //   a ${typeConfig.POINT_MARKER_RADIUS},${typeConfig.POINT_MARKER_RADIUS} 0 1,0 ${2*typeConfig.POINT_MARKER_RADIUS},0
+    //   a ${typeConfig.POINT_MARKER_RADIUS},${typeConfig.POINT_MARKER_RADIUS} 0 1,0 -${2*typeConfig.POINT_MARKER_RADIUS},0
+    // ` // circle of typeConfig.POINT_MARKER_RADIUS
 
-    return {
-      position,
-      icon: {
-        path,
-        anchor,
-        fillColor: MARKER_COLORS[index % MARKER_COLORS.length],
-        fillOpacity: 1,
-        strokeOpacity: 0
+    const fillColor = MARKER_COLORS[index % MARKER_COLORS.length]
+
+    return [
+      // labelMarker
+      {
+        position,
+        icon: {
+          path: labelMarkerPath,
+          anchor: labelMarkerAnchor,
+          fillColor,
+          fillOpacity: 1,
+          strokeOpacity: 0
+        },
+        label: {
+          text: labelText,
+          fontSize: typeConfig.LABEL_FONT_SIZE,
+          fontWeight: typeConfig.LABEL_FONT_WEIGHT
+        }
       },
-      label
-    }
+
+      // pointMarker
+      {
+        position,
+        icon: {
+          path: pointMarkerPath,
+          fillColor,
+          fillOpacity: 1,
+          strokeOpacity: 1,
+          strokeWeight: typeConfig.POINT_MARKER_STROKE_WEIGHT
+        },
+      }
+    ]
   }
 
   componentDidMount() {
@@ -145,12 +187,6 @@ class DrivingMap extends Slide {
               { 'visibility': 'off'}
             ]
           },
-          // {
-          //   featureType: 'road',
-          //   stylers: [
-          //     { 'visibility': 'off'}
-          //   ]
-          // },
           {
             featureType: 'water',
             elementType: 'labels',
@@ -192,12 +228,16 @@ class DrivingMap extends Slide {
               try {
                 // special case to add origin marker
                 if (index === 0) {
-                  const originMarker = new google.maps.Marker(this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, google))
-                  originMarker.setMap(map)
+                  this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, google).forEach(markerOptions => {
+                    const originMarker = new google.maps.Marker(markerOptions)
+                    originMarker.setMap(map)
+                  })    
                 }
 
-                const marker = new google.maps.Marker(this.formatMarkerOptions(stops[index + 1], directionsLeg.end_location, index + 1, google))
-                marker.setMap(map)
+                this.formatMarkerOptions(stops[index + 1], directionsLeg.end_location, index + 1, google).forEach(markerOptions => {
+                  const marker = new google.maps.Marker(markerOptions)
+                  marker.setMap(map)
+                })
               } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, index })}`)}
             })
           })
