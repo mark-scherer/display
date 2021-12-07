@@ -50,6 +50,11 @@ class DrivingMap extends Slide {
       - location: textual location to send to directions API
       - labelPosition: cardinal direction from location in which to place label
       - labelText: optional overwrite for default label text
+      - locationText: stylized name for location
+      - startDate: not currently used
+      - endDate: not currently used
+      - type: major or minor, controls marker styling
+      - labelMarkerMargin: overwrite margin between pointMarker and labelMarker, useful for spacing out labels
   */
   formatMarkerOptions(stopConfig, position, index, google) {
     // marker constants
