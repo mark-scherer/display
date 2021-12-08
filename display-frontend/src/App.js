@@ -1,6 +1,6 @@
 import logo from './logo.svg';
 import './App.css';
-import Display from './components/Display.js'
+import Display from './Components/Display.js'
 
 function App() {
   return (
