@@ -37,6 +37,8 @@ class Display extends React.Component {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
     })
 
+    // this.openFullscreen()
+
     const nextSlideInterval = setInterval(() => {
       let {
         config,
@@ -53,15 +55,36 @@ class Display extends React.Component {
       configName,
       config,
       currentSlideIndex: 0,
-      nextSlideInterval
+      nextSlideInterval,
+      fullscreen: false
     }
+  }
+
+  toggleFullscreen() {
+    const {
+      fullscreen
+    } = this.state
+
+    if (fullscreen) {
+      document.exitFullscreen()
+        .catch(error => { throw Error(`error exiting fullscreen: ${error.name}: ${error.message}`) })
+    } else {
+      const element = document.getElementsByClassName('display')[0]
+      element.requestFullscreen()
+        .catch(error => { throw Error(`error opening fullscreen: ${error.name}: ${error.message}`) })
+    }
+
+    this.setState({
+      fullscreen: !fullscreen
+    })
   }
 
   render() {
     const {
       configName,
       config,
-      currentSlideIndex
+      currentSlideIndex,
+      fullscreen
     } = this.state
 
     const slideElements = config.slides.map((slideConfig, index) => {
@@ -74,12 +97,17 @@ class Display extends React.Component {
     return (
       <div class='display'>
         
-        <div class='title'>
+        {/* <div class='title'>
           {configName}
-        </div>
+        </div> */}
 
         <div class='slide-container'>
           {slideElements}
+          <img 
+            class='fullscreen' 
+            onClick={() => this.toggleFullscreen()}
+            src={fullscreen ? 'https://img.icons8.com/windows/32/000000/compress.png' : 'https://img.icons8.com/windows/32/000000/fit-to-width--v1.png'}
+          />
         </div>
       </div>
     )
