@@ -127,5 +127,5 @@ html, body, #root, .App {
   font-size: x-large;
   font-weight: bold;
   /* border-radius: 5px; */
-  opacity: 85%;
+  opacity: 0.85
 }
