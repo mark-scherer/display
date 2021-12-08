@@ -6,7 +6,7 @@ const path = require('path')
 const Koa = require('koa')
 const serve = require('koa-static')
 
-const PORT = 3000
+const PORT = 8000
 const BUILD_DIR = '../display-frontend/build'
 
 const app = new Koa()
