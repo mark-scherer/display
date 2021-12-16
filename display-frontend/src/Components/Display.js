@@ -37,8 +37,6 @@ class Display extends React.Component {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
     })
 
-    // this.openFullscreen()
-
     const nextSlideInterval = setInterval(() => {
       let {
         config,
@@ -51,12 +49,18 @@ class Display extends React.Component {
       this.setState({ currentSlideIndex })
     }, config.duration*1000)
 
+    // route requests to actual backend server, not where frontend server from during dev
+    const serverUrl = process.env.NODE_ENV === 'development' ? 
+      `${window.location.protocol}//${window.location.hostname}:8000` : // just hard coding server port during dev
+      `${window.location.protocol}//${window.location.host}`
+
     this.state = {
       configName,
       config,
       currentSlideIndex: 0,
       nextSlideInterval,
-      fullscreen: false
+      fullscreen: false,
+      serverUrl
     }
   }
 
@@ -84,12 +88,14 @@ class Display extends React.Component {
       configName,
       config,
       currentSlideIndex,
-      fullscreen
+      fullscreen,
+      serverUrl
     } = this.state
 
     const slideElements = config.slides.map((slideConfig, index) => {
       return React.createElement(SlideComponents[slideConfig.type], {
         ...slideConfig,
+        serverUrl,
         displayed: currentSlideIndex === index
       })
     })

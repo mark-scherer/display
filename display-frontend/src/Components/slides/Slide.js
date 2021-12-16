@@ -18,11 +18,19 @@ class Slide extends React.Component {
   constructor(props) {
     super(props)
 
+    const {
+      serverUrl
+    } = this.props
+
     if (!this.constructor.requiredArgs) throw Error(`Slide child class (${this.constructor.name}) missing static requireArgs property - must be implemented before constructor`)
     
     this.constructor.requiredArgs.forEach(arg => {
       if (this.props[arg] === null || this.props[arg] === undefined) throw Error(`${this.constructor.name} slide missing required arg: ${arg}`)
     })
+
+    this.state = {
+      serverUrl
+    }
   }
 
   /*
