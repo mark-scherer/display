@@ -4,6 +4,8 @@ duration: 1000
 slides:
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'
+    photosBucket: display-photos
+    photosDir: test
     stops:
       - location: San Francisco, CA
         labelPosition: 'west'
@@ -27,7 +29,7 @@ slides:
         type: minor
       - location: Denver, CO
         locationText: Denver
-        labelPosition: 'west'
+        labelPosition: 'northeast'
         startDate: 8/8
         endDate: 8/28
         type: major
@@ -48,6 +50,7 @@ slides:
         startDate: 8/29
         endDate: 9/3
         type: major
+        labelMarkerMargin: 10
       - location: Nashville, TN
         locationText: Nashville
         labelPosition: 'east'

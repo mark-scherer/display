@@ -4,9 +4,33 @@
 
 import { Loader } from "@googlemaps/js-api-loader"
 import Slide from './Slide.js';
+import 'react-responsive-carousel/lib/styles/carousel.min.css'
+import { Carousel } from 'react-responsive-carousel'
 
-// please put this only in /etc/keys/ on server accessible thru api once available
-const MAPS_API_KEY = 'AIzaSyBEnedchGYg3yrsw86EzLmVZ_N7jmPwWQQ'
+// see https://developers.google.com/maps/documentation/javascript/style-reference
+const mapStyles = [
+  {
+    featureType: 'administrative',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  }
+]
 
 class DrivingMap extends Slide {
   static requiredArgs = [
@@ -17,13 +41,16 @@ class DrivingMap extends Slide {
   constructor(props) {
     super(props)
 
-    const loader = new Loader({
-      apiKey: MAPS_API_KEY,
-    })
+    // const loader = new Loader({
+    //   apiKey: MAPS_API_KEY,
+    // })
 
     this.state = {
-      loader,
-      map: null
+      ...this.state,  // state partially set in base Slide ctor
+      mapStyles,
+      loader: null,
+      map: null,
+      photos: null
     }
   }
 
@@ -169,91 +196,98 @@ class DrivingMap extends Slide {
     ]
   }
 
-  componentDidMount() {
+  async createMap() {
     const {
-      loader
+      serverUrl,
+      mapStyles
     } = this.state
-
+    
     const {
       stops
     } = this.props
 
-    loader.load()
-      .then((google) => {
-        const directionsService = new google.maps.DirectionsService()
-        const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
+    const {
+      key: mapsApiKey
+    } = await fetch(`${serverUrl}/apiKey/mapsApi`).then(response => response.json())
+  
+    const loader = new Loader({ apiKey: mapsApiKey})
 
-        // see https://developers.google.com/maps/documentation/javascript/style-reference
-        const mapStyles = [
-          {
-            featureType: 'administrative',
-            elementType: 'labels',
-            stylers: [
-              { 'visibility': 'off'}
-            ]
-          },
-          {
-            featureType: 'water',
-            elementType: 'labels',
-            stylers: [
-              { 'visibility': 'off'}
-            ]
-          },
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [
-              { 'visibility': 'off'}
-            ]
-          }
-        ]
+    try {
+      const google = await loader.load()
+      const directionsService = new google.maps.DirectionsService()
+      const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
-        const map = new google.maps.Map(document.getElementById('driving-map'), {
-          center: { lat: 37.77, lng: -122.39 },
-          zoom: 8,
-          mapTypeId: google.maps.MapTypeId.TERRAIN,
-          styles: mapStyles,
-          disableDefaultUI: true
-        })
-        directionsRenderer.setMap(map)
-        
-        if (stops.length >= 2) {
-          directionsService.route({
-            origin: this.formatStop(stops[0], false),
-            destination: this.formatStop(stops[stops.length - 1], false),
-            waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
-            travelMode: google.maps.TravelMode.DRIVING
-          }, (directionsResult, directionsStatus) => {
-            
-            if (directionsStatus === 'OK') directionsRenderer.setDirections(directionsResult)
-            else throw Error(`error getting directions: ${ directionsStatus }`)
-
-            // add custom markers
-            directionsResult.routes[0].legs.forEach((directionsLeg, index) => {
-              try {
-                // special case to add origin marker
-                if (index === 0) {
-                  this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, google).forEach(markerOptions => {
-                    const originMarker = new google.maps.Marker(markerOptions)
-                    originMarker.setMap(map)
-                  })    
-                }
-
-                this.formatMarkerOptions(stops[index + 1], directionsLeg.end_location, index + 1, google).forEach(markerOptions => {
-                  const marker = new google.maps.Marker(markerOptions)
-                  marker.setMap(map)
-                })
-              } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, index })}`)}
-            })
-          })
-        }
-
-        this.setState({
-          loader,
-          map
-        })
+      const map = new google.maps.Map(document.getElementById('driving-map'), {
+        center: { lat: 37.77, lng: -122.39 },
+        zoom: 8,
+        mapTypeId: google.maps.MapTypeId.TERRAIN,
+        styles: mapStyles,
+        disableDefaultUI: true
       })
-      .catch(error => { throw Error(`${this.constructor.name} ctor: error creating google map: ${error}`) })
+      directionsRenderer.setMap(map)
+      
+      if (stops.length >= 2) {
+        directionsService.route({
+          origin: this.formatStop(stops[0], false),
+          destination: this.formatStop(stops[stops.length - 1], false),
+          waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
+          travelMode: google.maps.TravelMode.DRIVING
+        }, (directionsResult, directionsStatus) => {
+          
+          if (directionsStatus === 'OK') directionsRenderer.setDirections(directionsResult)
+          else throw Error(`error getting directions: ${ directionsStatus }`)
+
+          // add custom markers
+          directionsResult.routes[0].legs.forEach((directionsLeg, index) => {
+            try {
+              // special case to add origin marker
+              if (index === 0) {
+                this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, google).forEach(markerOptions => {
+                  const originMarker = new google.maps.Marker(markerOptions)
+                  originMarker.setMap(map)
+                })    
+              }
+
+              this.formatMarkerOptions(stops[index + 1], directionsLeg.end_location, index + 1, google).forEach(markerOptions => {
+                const marker = new google.maps.Marker(markerOptions)
+                marker.setMap(map)
+              })
+            } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, index })}`)}
+          })
+        })
+      }
+
+      this.setState({
+        loader,
+        map
+      })
+    } catch(error) {
+      throw Error(`${this.constructor.name} ctor: error creating google map: ${error}`)
+    }
+  }
+
+  async fetchPhotos() {
+    const {
+      serverUrl,
+    } = this.state
+    
+    const {
+      photosBucket,
+      photosDir
+    } = this.props
+
+    const {
+      files: photos
+    } = await fetch(`${serverUrl}/storage/${photosBucket}/${photosDir}`).then(response => response.json())
+    
+    this.setState({
+      photos
+    })
+  }
+
+  async componentDidMount() {
+    await this.createMap()
+    await this.fetchPhotos()
   }
 
   show() {}
@@ -262,13 +296,42 @@ class DrivingMap extends Slide {
 
   content() {
     const {
+      photos
+    } = this.state
+
+    const {
       title
     } = this.props
+
+    const imageElements = photos ? 
+      Object.keys(photos).map(photoName => {
+        return (
+          <img src={photos[photoName]}/>
+        )
+      }) : []
+    const photoSpotlightElement = imageElements.length ? 
+    (
+      <div class='driving-map-photos-container'>
+        <Carousel
+          autoPlay="true"
+          dynamicHeight="true"
+          infiniteLoop="true"
+          interval="5000"
+          showArrows={false}
+          showStatus={false}
+          showIndicators={false}
+          showThumbs={false}
+        >
+          { imageElements }
+        </Carousel>
+      </div>
+    ) : ''
 
     return (
       <div class='driving-map-container'>
         <div id='driving-map'></div>
         <div class='driving-map-title'>{title}</div>
+        {photoSpotlightElement}
       </div>
     )
   }
