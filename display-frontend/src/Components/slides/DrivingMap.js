@@ -3,6 +3,8 @@
 */
 
 import { Loader } from "@googlemaps/js-api-loader"
+import { Promise as Bluebird } from 'bluebird'
+import { randomElement } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import 'react-responsive-carousel/lib/styles/carousel.min.css'
 import { Carousel } from 'react-responsive-carousel'
@@ -48,9 +50,14 @@ class DrivingMap extends Slide {
     this.state = {
       ...this.state,  // state partially set in base Slide ctor
       mapStyles,
+      google: null,
       loader: null,
       map: null,
-      photos: null
+      directions: null,
+      markers: null,
+      stopPhotos: null,
+      spotlightStopIndex: null,
+      spotlightConfig: null
     }
   }
 
@@ -83,7 +90,7 @@ class DrivingMap extends Slide {
       - type: major or minor, controls marker styling
       - labelMarkerMargin: overwrite margin between pointMarker and labelMarker, useful for spacing out labels
   */
-  formatMarkerOptions(stopConfig, position, index, google) {
+  formatMarkerOptions(stopConfig, position, index, spotlight, google) {
     // marker constants
       // distances are in icon.path's coordinate system
     const DEFAULT_LABEL_POSITON = 'north'
@@ -95,6 +102,7 @@ class DrivingMap extends Slide {
       'lightgray'
     ]
 
+    // these props controlled by marker type
     const TYPE_CONFIGS = {
       major: {
         MIN_LABEL_WIDTH: 50,
@@ -118,12 +126,26 @@ class DrivingMap extends Slide {
       }
     }
 
+    // these props controlled by marker spotlight status
+    const SPOTLIGHT_CONFIGS = {
+      true: {
+        fillColor: 'white',
+        strokeOpacity: 1,
+        strokeWeight: 2
+      },
+      false: {
+        fillColor: MARKER_COLORS[index % MARKER_COLORS.length],
+        strokeOpacity: 0
+      }
+    }
+
     // setup defaults
     if (!stopConfig.type) stopConfig.type = DEFAULT_TYPE
     if (!stopConfig.labelPosition) stopConfig.labelPosition = DEFAULT_LABEL_POSITON
     
     const typeConfig = TYPE_CONFIGS[stopConfig.type]
     if (!typeConfig) throw Error(`unsupported stopConfig.type: ${stopConfig.type}`)
+    const spotlightConfig = SPOTLIGHT_CONFIGS[String(spotlight)]
     
     const dateText = stopConfig.startDate ?
       `${stopConfig.startDate}` + (stopConfig.endDate ?
@@ -162,8 +184,6 @@ class DrivingMap extends Slide {
     //   a ${typeConfig.POINT_MARKER_RADIUS},${typeConfig.POINT_MARKER_RADIUS} 0 1,0 -${2*typeConfig.POINT_MARKER_RADIUS},0
     // ` // circle of typeConfig.POINT_MARKER_RADIUS
 
-    const fillColor = MARKER_COLORS[index % MARKER_COLORS.length]
-
     return [
       // labelMarker
       {
@@ -171,9 +191,10 @@ class DrivingMap extends Slide {
         icon: {
           path: labelMarkerPath,
           anchor: labelMarkerAnchor,
-          fillColor,
+          fillColor: spotlightConfig.fillColor,
           fillOpacity: 1,
-          strokeOpacity: 0
+          strokeOpacity: spotlightConfig.strokeOpacity,
+          strokeWeight: spotlightConfig.strokeWeight
         },
         label: {
           text: labelText,
@@ -187,7 +208,7 @@ class DrivingMap extends Slide {
         position,
         icon: {
           path: pointMarkerPath,
-          fillColor,
+          fillColor: spotlightConfig.fillColor,
           fillOpacity: 1,
           strokeOpacity: 1,
           strokeWeight: typeConfig.POINT_MARKER_STROKE_WEIGHT
@@ -199,7 +220,7 @@ class DrivingMap extends Slide {
   async createMap() {
     const {
       serverUrl,
-      mapStyles
+      mapStyles,
     } = this.state
     
     const {
@@ -227,34 +248,30 @@ class DrivingMap extends Slide {
       directionsRenderer.setMap(map)
       
       if (stops.length >= 2) {
-        directionsService.route({
-          origin: this.formatStop(stops[0], false),
-          destination: this.formatStop(stops[stops.length - 1], false),
-          waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
-          travelMode: google.maps.TravelMode.DRIVING
-        }, (directionsResult, directionsStatus) => {
-          
-          if (directionsStatus === 'OK') directionsRenderer.setDirections(directionsResult)
-          else throw Error(`error getting directions: ${ directionsStatus }`)
-
-          // add custom markers
-          directionsResult.routes[0].legs.forEach((directionsLeg, index) => {
-            try {
-              // special case to add origin marker
-              if (index === 0) {
-                this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, google).forEach(markerOptions => {
-                  const originMarker = new google.maps.Marker(markerOptions)
-                  originMarker.setMap(map)
-                })    
-              }
-
-              this.formatMarkerOptions(stops[index + 1], directionsLeg.end_location, index + 1, google).forEach(markerOptions => {
-                const marker = new google.maps.Marker(markerOptions)
-                marker.setMap(map)
-              })
-            } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, index })}`)}
+        const directionsResult = await new Promise((resolve, reject) => {
+          directionsService.route({
+            origin: this.formatStop(stops[0], false),
+            destination: this.formatStop(stops[stops.length - 1], false),
+            waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
+            travelMode: google.maps.TravelMode.DRIVING
+          }, (directionsResult, directionsStatus) => {
+            
+            if (directionsStatus === 'OK') {
+              directionsRenderer.setDirections(directionsResult)
+              resolve(directionsResult)
+            }
+            else reject(`error getting directions: ${ directionsStatus }`)
           })
         })
+
+        const directionsCenter = directionsResult.routes[0].bounds.getCenter()
+        this.setState({
+          directions: directionsResult,
+          directionsCenter,
+          google
+        })
+
+        this.createMapMarkers()
       }
 
       this.setState({
@@ -266,28 +283,117 @@ class DrivingMap extends Slide {
     }
   }
 
+  // use arg for spotlightStopIndex so can call before updating state with new spotlightStopIndex
+  createMapMarkers(spotlightStopIndex) {
+    const {
+      google,
+      map,
+      directions,
+      markers: oldMarkers
+    } = this.state
+
+    const {
+      stops
+    } = this.props
+
+    if (spotlightStopIndex === undefined || spotlightStopIndex === null) spotlightStopIndex = this.state.spotlightStopIndex // if not provided, check current state
+
+    let newMarkers = []
+    directions.routes[0].legs.forEach((directionsLeg, directionsIndex) => {
+      const stopIndex = directionsIndex + 1
+      try {
+        // special case to add origin marker
+        if (directionsIndex === 0) {
+          this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, spotlightStopIndex === 0, google).forEach(markerOptions => {
+            const originMarker = new google.maps.Marker(markerOptions)
+            originMarker.setMap(map)
+            newMarkers.push(originMarker)
+          })    
+        }
+
+        this.formatMarkerOptions(stops[stopIndex], directionsLeg.end_location, stopIndex, spotlightStopIndex === stopIndex, google).forEach(markerOptions => {
+          const marker = new google.maps.Marker(markerOptions)
+          marker.setMap(map)
+          newMarkers.push(marker)
+        })
+      } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, directionsIndex, stopIndex })}`)}
+    })
+
+    // remove old markers
+    if (oldMarkers) oldMarkers.forEach(marker => marker.setMap(null))
+
+    this.setState({
+      markers: newMarkers
+    })
+  }
+
   async fetchPhotos() {
     const {
       serverUrl,
     } = this.state
     
     const {
-      photosBucket,
-      photosDir
+      stops
     } = this.props
 
-    const {
-      files: photos
-    } = await fetch(`${serverUrl}/storage/${photosBucket}/${photosDir}`).then(response => response.json())
+    let stopPhotos = {}
+    await Bluebird.map(stops, async (stopConfig, stopIndex) => {
+      if (stopConfig.photosBucket && stopConfig.photosDir) {
+        stopPhotos[stopIndex] = (await fetch(`${serverUrl}/storage/${stopConfig.photosBucket}/${stopConfig.photosDir}`).then(response => response.json())).files
+      }
+    })
     
     this.setState({
-      photos
+      stopPhotos
+    })
+    console.log(`fetched stopPhotos: ${JSON.stringify({ stopPhotos })}`)
+  }
+
+  iterateSpotlight() {
+    const {
+      google,
+      map,
+      directions,
+      directionsCenter,
+      stopPhotos
+    } = this.state
+
+    const {
+      spotlightLocations
+    } = this.props
+
+    const spotlightStopIndex = parseInt(randomElement(Object.keys(stopPhotos)))
+
+    let spotlightConfig
+    if (directions) {
+      this.createMapMarkers(spotlightStopIndex)
+
+      // move map to frame spotlight + directions
+      spotlightConfig = randomElement(spotlightLocations)
+      console.log(`picked spotlight location: ${JSON.stringify({ spotlightConfig })}`)
+      const newCenter = new google.maps.LatLng(directionsCenter.lat() + spotlightConfig.mapOffset.lat, directionsCenter.lng() + spotlightConfig.mapOffset.lng)
+      map.setCenter(newCenter)
+    }
+
+    this.setState({
+      spotlightStopIndex,
+      spotlightConfig
     })
   }
 
   async componentDidMount() {
+    const {
+      spotlightDuration
+    } = this.props
+
     await this.createMap()
     await this.fetchPhotos()
+
+    this.iterateSpotlight()
+    const spotlightInterval = setInterval(this.iterateSpotlight.bind(this), spotlightDuration*1000)
+    this.setState({
+      spotlightInterval
+    })
   }
 
   show() {}
@@ -296,34 +402,56 @@ class DrivingMap extends Slide {
 
   content() {
     const {
-      photos
+      stopPhotos,
+      spotlightStopIndex,
+      spotlightConfig
     } = this.state
 
     const {
-      title
+      title,
+      photoDuration,
+      stops
     } = this.props
 
-    const imageElements = photos ? 
-      Object.keys(photos).map(photoName => {
+    const spotlightPhotos = stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined) ? 
+      stopPhotos[String(spotlightStopIndex)] : null
+
+    const spotlightImageElements = spotlightPhotos && spotlightConfig ? 
+      Object.keys(spotlightPhotos).map(photoName => {
+        const spotlightMaxHeight = window.innerHeight * parseFloat(spotlightConfig.size.height)/100
+        const spotlightMaxWidth = window.innerWidth * parseFloat(spotlightConfig.size.width)/100
+        const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait
+        const verticallyConstrained = spotlightMaxWidth / spotlightMaxHeight > imgWidthOverHeight
+        const imgHeight = verticallyConstrained ? spotlightMaxHeight : spotlightMaxWidth / imgWidthOverHeight
+        const imgWidth = verticallyConstrained ? spotlightMaxHeight * imgWidthOverHeight : spotlightMaxWidth
+        // console.log(`calculated img width/height: ${JSON.stringify({ 
+        //   windowHeight: window.innerHeight,
+        //   windowWidth: window.innerWidth,
+        //   spotlightMaxHeight,
+        //   spotlightMaxWidth,
+        //   verticallyConstrained,
+        //   imgHeight,
+        //   imgWidth
+        // })}`)
         return (
-          <img src={photos[photoName]}/>
+          <img 
+            src={spotlightPhotos[photoName]}
+            style={{ height: imgHeight, width: imgWidth }}
+          />
         )
       }) : []
-    const photoSpotlightElement = imageElements.length ? 
+
+    const spotlightElement = spotlightImageElements.length ? 
     (
-      <div class='driving-map-photos-container'>
-        <Carousel
-          autoPlay="true"
-          dynamicHeight="true"
-          infiniteLoop="true"
-          interval="5000"
-          showArrows={false}
-          showStatus={false}
-          showIndicators={false}
-          showThumbs={false}
-        >
-          { imageElements }
-        </Carousel>
+      <div 
+        className={`driving-map-spotlight ${spotlightConfig.location}`}
+      >
+        <div class='driving-map-spotlight-title'>
+          {stops[spotlightStopIndex].locationText}
+        </div>
+        <div class='driving-map-spotlight-carousel'>
+          { randomElement(spotlightImageElements) }
+        </div>
       </div>
     ) : ''
 
@@ -331,7 +459,7 @@ class DrivingMap extends Slide {
       <div class='driving-map-container'>
         <div id='driving-map'></div>
         <div class='driving-map-title'>{title}</div>
-        {photoSpotlightElement}
+        {spotlightElement}
       </div>
     )
   }
