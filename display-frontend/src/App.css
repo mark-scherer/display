@@ -129,23 +129,33 @@ html, body, #root, .App {
   /* border-radius: 5px; */
   opacity: 0.85
 }
-.driving-map-spotlight {
+.driving-map-spotlight-container {
   position: absolute;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+.driving-map-spotlight {
   overflow: hidden;
   background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  height: fit-content;
 }
-.driving-map-spotlight.northeast {
+/* .driving-map-spotlight-container.northeast {
   top: 20px;
   right: 50px
 }
-.driving-map-spotlight.southwest {
+.driving-map-spotlight-container.southwest {
   bottom: 20px;
   left: 20px
-}
+} */
 .driving-map-spotlight-title {
   font-size: larger;
   font-weight: bold;
 }
-.driving-map-spotlight-carousel {
+/* .driving-map-spotlight-carousel {
   padding: 5px;
-}
+} */

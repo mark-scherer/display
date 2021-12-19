@@ -400,6 +400,28 @@ class DrivingMap extends Slide {
 
   hide() {}
 
+  getMaxImageDimensions(imgWidthOverHeight, spotlightConfig) {
+    // need to calculate space in spotlight not available to image
+    const spotlightPadding = parseInt(spotlightConfig.padding)
+    const spotlightTitleHeight = parseInt(spotlightConfig.titleHeight)
+
+    // get max dimensions available to image
+    const spotlightImageMaxHeight = window.innerHeight * parseFloat(spotlightConfig.size.height)/100 - 2*spotlightPadding - spotlightTitleHeight
+    const spotlightImageMaxWidth = window.innerWidth * parseFloat(spotlightConfig.size.width)/100 - 2*spotlightPadding
+
+    // check if this image will be vertically or horizontally contrained
+    const verticallyConstrained = spotlightImageMaxWidth / spotlightImageMaxHeight > imgWidthOverHeight
+
+    // calculated max image dimensions while maintain aspect ratio
+    const imgHeight = verticallyConstrained ? spotlightImageMaxHeight : spotlightImageMaxWidth / imgWidthOverHeight
+    const imgWidth = verticallyConstrained ? spotlightImageMaxHeight * imgWidthOverHeight : spotlightImageMaxWidth
+
+    return {
+      imgHeight,
+      imgWidth
+    }
+  }
+
   content() {
     const {
       stopPhotos,
@@ -410,29 +432,22 @@ class DrivingMap extends Slide {
     const {
       title,
       photoDuration,
-      stops
+      stops,
+      defaultSpotlightConfig
     } = this.props
+
+    const _spotlightConfig = {
+      ...defaultSpotlightConfig,
+      ...spotlightConfig
+    }
 
     const spotlightPhotos = stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined) ? 
       stopPhotos[String(spotlightStopIndex)] : null
 
     const spotlightImageElements = spotlightPhotos && spotlightConfig ? 
       Object.keys(spotlightPhotos).map(photoName => {
-        const spotlightMaxHeight = window.innerHeight * parseFloat(spotlightConfig.size.height)/100
-        const spotlightMaxWidth = window.innerWidth * parseFloat(spotlightConfig.size.width)/100
-        const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait
-        const verticallyConstrained = spotlightMaxWidth / spotlightMaxHeight > imgWidthOverHeight
-        const imgHeight = verticallyConstrained ? spotlightMaxHeight : spotlightMaxWidth / imgWidthOverHeight
-        const imgWidth = verticallyConstrained ? spotlightMaxHeight * imgWidthOverHeight : spotlightMaxWidth
-        // console.log(`calculated img width/height: ${JSON.stringify({ 
-        //   windowHeight: window.innerHeight,
-        //   windowWidth: window.innerWidth,
-        //   spotlightMaxHeight,
-        //   spotlightMaxWidth,
-        //   verticallyConstrained,
-        //   imgHeight,
-        //   imgWidth
-        // })}`)
+        const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait... will need to revisit this
+        const { imgHeight, imgWidth } = this.getMaxImageDimensions(imgWidthOverHeight, _spotlightConfig)
         return (
           <img 
             src={spotlightPhotos[photoName]}
@@ -444,13 +459,22 @@ class DrivingMap extends Slide {
     const spotlightElement = spotlightImageElements.length ? 
     (
       <div 
-        className={`driving-map-spotlight ${spotlightConfig.location}`}
+        class='driving-map-spotlight-container'
+        style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
       >
-        <div class='driving-map-spotlight-title'>
-          {stops[spotlightStopIndex].locationText}
-        </div>
-        <div class='driving-map-spotlight-carousel'>
-          { randomElement(spotlightImageElements) }
+        <div class='driving-map-spotlight'>
+          <div 
+            class='driving-map-spotlight-title'
+            style={{ height: _spotlightConfig.titleHeight }}
+          >
+            {stops[spotlightStopIndex].locationText}
+          </div>
+          <div 
+            class='driving-map-spotlight-carousel'
+            style={{ padding: _spotlightConfig.padding }}
+          >
+            { randomElement(spotlightImageElements) }
+          </div>
         </div>
       </div>
     ) : ''
