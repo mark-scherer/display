@@ -60,11 +60,15 @@ slides:
         startDate: 8/8
         endDate: 8/28
         type: major
+        photosBucket: display-photos
+        photosDir: denver
       - location: Kuttawa, KY
         locationText: Kuttawa
         labelPosition: 'southwest'
         startDate: 8/28
         type: minor
+        photosBucket: display-photos
+        photosDir: kuttawa
       - location: Henderson, KY
         locationText: Henderson
         labelPosition: 'north'
@@ -78,35 +82,57 @@ slides:
         endDate: 9/3
         type: major
         labelMarkerMargin: 10
-        # photosBucket: display-photos
-        # photosDir: test
+        photosBucket: display-photos
+        photosDir: louisville
       - location: Nashville, TN
         locationText: Nashville
         labelPosition: 'east'
         startDate: 9/3
         endDate: 9/11
         type: major
+        photosBucket: display-photos
+        photosDir: nashville
       - location: Dallas, TX
         locationText: Dallas
         labelPosition: 'northwest'
         startDate: 9/11
         type: minor
+        photosBucket: display-photos
+        photosDir: dallas
       - location: Waco, TX
         locationText: Waco
         labelPosition: 'east'
         startDate: 9/12
         type: minor
+        photosBucket: display-photos
+        photosDir: waco
       - location: Austin, TX
         locationText: Austin
         labelPosition: 'south'
         startDate: 9/12
         endDate: 10/2
         type: major
+        photosBucket: display-photos
+        photosDir: austin
       - location: White Sands, NM
         locationText: White Sands NP
         labelPosition: 'east'
         startDate: 10/2
         type: minor
+        photosBucket: display-photos
+        photosDir: whiteSands
+      - location: Flagstaff, AZ ## flagstaff repeated for proper routing
+        locationText: Flagstaff
+        labelPosition: 'northeast'
+        type: major
+        labelMarkerMargin: 6
+      - location: Horseshoe Bend, AZ
+        locationText: Horseshoe Bend
+        labelPosition: 'north'
+        startDate: 10/5
+        type: minor
+        photosBucket: display-photos
+        photosDir: horseshoeBend
       - location: Flagstaff, AZ
         locationText: Flagstaff
         labelPosition: 'northeast'
@@ -119,34 +145,51 @@ slides:
         labelPosition: 'west'
         startDate: 10/3
         type: minor
+        photosBucket: display-photos
+        photosDir: sedona
         labelMarkerMargin: 10
       - location: Grand Canyon South Rim Park Headquarters
         locationText: Grand Canyon NP
         labelPosition: 'west'
         startDate: 10/8
         type: minor
+        photosBucket: display-photos
+        photosDir: grandCanyon
       - location: Phoenix, AZ
         locationText: Phonenix
         labelPosition: 'east'
         startDate: 10/8
         type: minor
+      - location: Dune Buggy Flats, CA
+        locationText: Algodones Dunes
+        labelPosition: 'southeast'
+        startDate: 10/9
+        type: minor
+        photosBucket: display-photos
+        photosDir: algodonesDunes
       - location: San Diego, CA
         locationText: San Diego
         labelPosition: 'southwest'
         startDate: 10/9
         endDate: 10/16
         type: major
+        photosBucket: display-photos
+        photosDir: sanDiego
       - location: Los Angeles, CA
         locationText: Los Angeles
         labelPosition: 'southwest'
         startDate: 10/10
         type: minor
+        photosBucket: display-photos
+        photosDir: la
       - location: Arroyo Grande, CA
         locationText: Arroyo Grande
         labelPosition: 'west'
         startDate: 10/17
         type: major
         endDate: 10/22
+        photosBucket: display-photos
+        photosDir: arroyoGrande
       - location: San Francisco, CA
         labelPosition: 'east'
         labelText: 'End: 10/22'
