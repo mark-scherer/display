@@ -29,7 +29,8 @@ class Display extends React.Component {
       this.state = {
         configName,
         serverUrl,
-        config: {slides: []}, // must initalize to this state
+        // config: {slides: []}, // must initalize to this state
+        config: null,
         currentSlideIndex: 0,
         nextSlideInterval: null,
         fullscreen: false
@@ -68,6 +69,10 @@ class Display extends React.Component {
       config = await fetch(`${serverUrl}/config/${configName}`).then(data => data.json())
     } catch (error) {
       console.error(`error fetching config: ${JSON.stringify({ configName, error: String(error) })}`)
+      this.setState({
+        config: { notFound: true }
+      })
+      return
     }
     // console.log(`got config ${configName}: ${JSON.stringify({ config })}`)
 
@@ -99,11 +104,25 @@ class Display extends React.Component {
 
   render() {
     const {
+      configName,
       config,
       currentSlideIndex,
       fullscreen,
       serverUrl
     } = this.state
+
+    // handle loading, config not found states
+    let errorMsg
+    if (!config) errorMsg = `loading ${configName}...`
+    else if (config.notFound) errorMsg = `didn't find ${configName}... double check the end of the url?`
+    console.log(`error msg? ${JSON.stringify({ errorMsg, config })}`)
+    if (errorMsg) {
+      return (
+        <div class='error-msg-container'>
+          <div>{errorMsg}</div>
+        </div>
+      )
+    }
 
     const slideElements = config.slides.map((slideConfig, index) => {
       return React.createElement(SlideComponents[slideConfig.type], {

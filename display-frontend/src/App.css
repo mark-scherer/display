@@ -52,6 +52,12 @@ html, body, #root, .App {
   flex-direction: column;
   height: 100%;
 }
+.error-msg-container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 
 /* title styling */
