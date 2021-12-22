@@ -18,50 +18,22 @@ class Display extends React.Component {
   constructor(props) {
     super(props)
 
-    // first we need to grab the slides config yaml, stored in the url path
-    // const splitPath = window.location.pathname.split('/')
-    // const configName = splitPath.length > 0 ? splitPath[splitPath.length - 1] : null
-    const configName = 'dev' // for now just hardcode config
-
-    let config = null
-    try {
-      config = require(`../slideConfigs/${configName}.yaml`)   
-    } catch {
-      config = require(`../slideConfigs/${DEFAULT_CONFIG}`)   
-    }
-
-    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: duration`)
-    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: slides`)
-    if (!config.slides.length) throw Error(`config ${configName} has no slides`)
-    config.slides.forEach((slideConfig, index) => {
-      if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
-    })
-
-    const nextSlideInterval = setInterval(() => {
-      let {
-        config,
-        currentSlideIndex
-      } = this.state
-
-      currentSlideIndex += 1
-      if (currentSlideIndex >= config.slides.length) currentSlideIndex = 0
-
-      this.setState({ currentSlideIndex })
-    }, config.duration*1000)
+    const splitPath = window.location.pathname.split('/')
+    const configName = splitPath.length > 0 ? splitPath[splitPath.length - 1] : null
 
     // route requests to actual backend server, not where frontend server from during dev
     const serverUrl = process.env.NODE_ENV === 'development' ? 
       `${window.location.protocol}//${window.location.hostname}:8000` : // just hard coding server port during dev
       `${window.location.protocol}//${window.location.host}`
 
-    this.state = {
-      configName,
-      config,
-      currentSlideIndex: 0,
-      nextSlideInterval,
-      fullscreen: false,
-      serverUrl
-    }
+      this.state = {
+        configName,
+        serverUrl,
+        config: {slides: []}, // must initalize to this state
+        currentSlideIndex: 0,
+        nextSlideInterval: null,
+        fullscreen: false
+      }    
   }
 
   toggleFullscreen() {
@@ -83,9 +55,50 @@ class Display extends React.Component {
     })
   }
 
-  render() {
+  async componentDidMount() {
     const {
       configName,
+      serverUrl
+    } = this.state
+
+    console.log(`componentDidMount: got configName: ${JSON.stringify({ configName })}`)
+
+    let config
+    try {
+      config = await fetch(`${serverUrl}/config/${configName}`).then(data => data.json())
+    } catch (error) {
+      console.error(`error fetching config: ${JSON.stringify({ configName, error: String(error) })}`)
+    }
+    // console.log(`got config ${configName}: ${JSON.stringify({ config })}`)
+
+    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: duration`)
+    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: slides`)
+    if (!config.slides.length) throw Error(`config ${configName} has no slides`)
+    config.slides.forEach((slideConfig, index) => {
+      if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
+    })
+
+    const nextSlideInterval = setInterval(() => {
+      let {
+        config,
+        currentSlideIndex
+      } = this.state
+
+      currentSlideIndex += 1
+      if (currentSlideIndex >= config.slides.length) currentSlideIndex = 0
+
+      this.setState({ currentSlideIndex })
+    }, config.duration*1000)
+
+    this.setState({
+      config,
+      nextSlideInterval,
+
+    })
+  }
+
+  render() {
+    const {
       config,
       currentSlideIndex,
       fullscreen,

@@ -13,6 +13,7 @@
     "@koa/cors": "^3.1.0",
     "@koa/router": "^10.1.1",
     "bluebird": "^3.7.2",
+    "js-yaml": "^4.1.0",
     "koa": "^2.13.4",
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21"
