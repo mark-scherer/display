@@ -7,9 +7,11 @@ import React from 'react';
 // janky but for each slide must import AND add to SlideComponents
 import Message from "./slides/Message.js"
 import DrivingMap from "./slides/DrivingMap.js"
+import SunMap from "./slides/SunMap.js"
 const SlideComponents = {
   Message,
-  DrivingMap
+  DrivingMap,
+  SunMap
 }
 
 const DEFAULT_CONFIG = 'dev.yaml'

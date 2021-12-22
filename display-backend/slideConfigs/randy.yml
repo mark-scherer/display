@@ -1,6 +1,9 @@
 
 ---
-duration: 1000
+duration: 30
 slides:
-  - type: Message
-    msg: Merry Chirstmas Dad!
+  # - type: Message
+  #   msg: Merry Chirstmas Dad!
+  - type: SunMap
+    lat: 38.44
+    lng: -85.61
