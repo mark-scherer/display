@@ -490,11 +490,14 @@ class DrivingMap extends Slide {
     await this.createMap()
     await this.fetchPhotos()
 
-    this.iterateSpotlight()
-    const spotlightInterval = setInterval(this.iterateSpotlight.bind(this), spotlightDuration*1000)
-    this.setState({
-      spotlightInterval
-    })
+    // let high-level overview without spotlight show initally
+    setTimeout(() => {
+      this.iterateSpotlight()
+      const spotlightInterval = setInterval(this.iterateSpotlight.bind(this), spotlightDuration*1000)
+      this.setState({
+        spotlightInterval
+      })
+    }, 5000)
   }
 
   show() {}
