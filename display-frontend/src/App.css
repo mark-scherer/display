@@ -133,6 +133,8 @@ html, body, #root, .App {
   position: absolute;
   display: flex;
   justify-content: center;
+  align-items: center;
+  margin: auto;
   overflow: hidden;
 }
 .driving-map-spotlight {

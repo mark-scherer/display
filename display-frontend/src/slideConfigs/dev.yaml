@@ -4,10 +4,21 @@ duration: 1000
 slides:
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'
-    defaultSpotlightConfig:
-      padding: 5px
-      titleHeight: 25px
-    spotlightLocations:
+    lowLevelSpotlightFrac: 0.5   # percentage of time spent in low level (zoomed in) spotlights, rest spent in high level (zoomed out) spotlights
+    lowLevelSpotlightConfig:
+      zoom: 7
+      size:
+        height: 85%
+        width: 60%
+      mapOffset:
+        lat: 2
+        lng: 3
+      margin:
+        top: 60px
+        bottom: 10px
+        left: 20px
+        right: 50px 
+    highLevelSpotlightConfigs:
       - mapOffset:
           lat: 3
           lng: 0
@@ -26,9 +37,11 @@ slides:
         margin:
           bottom: 20px
           left: 20px
-    spotlightDuration: 10
-    # spotlightDuration: 1000
-    photoDuration: 5
+    defaultSpotlightConfig:   # applies to all spotlights if not overriden
+      padding: 5px
+      titleHeight: 25px
+    spotlightDuration: 30
+    photoDuration: 10
     stops:
       - location: San Francisco, CA
         labelPosition: 'west'

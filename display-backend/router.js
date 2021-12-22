@@ -38,7 +38,7 @@ router.get('/storage/:bucket/:dir', async (ctx, next) => {
   console.log(`got ${files.length} files`)
   let urls = {}
   await Bluebird.map(files, async file => {
-    if (file.name[file.name.length - 1] !== '/') urls[file.name] = await file.getSignedUrl(signedUrlOptions)
+    if (file.name[file.name.length - 1] !== '/') urls[file.name] = (await file.getSignedUrl(signedUrlOptions))[0]
   })
 
   ctx.body = {files: urls}

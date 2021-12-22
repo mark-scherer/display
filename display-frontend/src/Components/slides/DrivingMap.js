@@ -48,16 +48,29 @@ class DrivingMap extends Slide {
     // })
 
     this.state = {
-      ...this.state,  // state partially set in base Slide ctor
+      // include state partially set in base Slide ctor
+      ...this.state,
+
+      // rendering controls
       mapStyles,
+
+      // temporarily null rendering objects
       google: null,
       loader: null,
       map: null,
-      directions: null,
-      markers: null,
-      stopPhotos: null,
+      directions: null, // type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
+      markers: null,    // markers[directionsIndex] = type google.maps.Marker <- directionsIndex = stopIndex + 1
+      stopPhotos: null, // stopPhotos[stopIndex]: {filename: url}   // where stopIndex is props.stops[stopIndex] <- directionsInde = stopIndex + 1
+      spotlightInterval: null,
+      photoInterval: null,
+
+      // rendering state variables
+      directionsCenter: null,
+      directionsZoom: null,
+      lowLevelSpotlightState: false, // currently zoomed in or zoomed out spotlight? Always start with zoomed out
       spotlightStopIndex: null,
-      spotlightConfig: null
+      spotlightConfig: null,
+      spotlightPhoto: null
     }
   }
 
@@ -200,7 +213,8 @@ class DrivingMap extends Slide {
           text: labelText,
           fontSize: typeConfig.LABEL_FONT_SIZE,
           fontWeight: typeConfig.LABEL_FONT_WEIGHT
-        }
+        },
+        title: labelText
       },
 
       // pointMarker
@@ -213,6 +227,7 @@ class DrivingMap extends Slide {
           strokeOpacity: 1,
           strokeWeight: typeConfig.POINT_MARKER_STROKE_WEIGHT
         },
+        title: labelText
       }
     ]
   }
@@ -247,8 +262,9 @@ class DrivingMap extends Slide {
       })
       directionsRenderer.setMap(map)
       
+      let directionsResult, directionsCenter, directionsZoom
       if (stops.length >= 2) {
-        const directionsResult = await new Promise((resolve, reject) => {
+        directionsResult = await new Promise((resolve, reject) => {
           directionsService.route({
             origin: this.formatStop(stops[0], false),
             destination: this.formatStop(stops[stops.length - 1], false),
@@ -264,20 +280,21 @@ class DrivingMap extends Slide {
           })
         })
 
-        const directionsCenter = directionsResult.routes[0].bounds.getCenter()
-        this.setState({
-          directions: directionsResult,
-          directionsCenter,
-          google
-        })
-
-        this.createMapMarkers()
+        map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
+        directionsCenter = map.getCenter()
+        directionsZoom = map.getZoom()        
       }
 
       this.setState({
+        google,
         loader,
-        map
+        map,
+        directions: directionsResult,
+        directionsCenter,
+        directionsZoom,
       })
+
+      this.createMapMarkers()
     } catch(error) {
       throw Error(`${this.constructor.name} ctor: error creating google map: ${error}`)
     }
@@ -325,6 +342,13 @@ class DrivingMap extends Slide {
     this.setState({
       markers: newMarkers
     })
+
+    // console.log(`createMarkers(): created markers: ${JSON.stringify({ markers: newMarkers.map(marker => {
+    //   return {
+    //     title: marker.getTitle(),
+    //     position: marker.getPosition()
+    //   }
+    // }) })}`)
   }
 
   async fetchPhotos() {
@@ -346,38 +370,115 @@ class DrivingMap extends Slide {
     this.setState({
       stopPhotos
     })
-    console.log(`fetched stopPhotos: ${JSON.stringify({ stopPhotos })}`)
+    // console.log(`fetched stopPhotos: ${JSON.stringify({ stopPhotos })}`)
   }
 
-  iterateSpotlight() {
+  iteratePhoto(spotlightStopIndex) {
+    const {
+      stopPhotos
+    } = this.state
+
+    if (spotlightStopIndex === null || spotlightStopIndex === undefined) spotlightStopIndex = this.state.spotlightStopIndex
+
+    const spotlightPhotos = stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined) ? 
+      stopPhotos[String(spotlightStopIndex)] : null
+
+    const spotlightPhoto = spotlightPhotos ? spotlightPhotos[randomElement(Object.keys(spotlightPhotos))] : null
+
+    this.setState({
+      spotlightPhoto
+    })
+    console.log(`iteratePhoto: updated spotlightPhoto ${JSON.stringify({ spotlightPhotos, spotlightPhoto })}`)
+  }
+
+  async iterateSpotlight() {
     const {
       google,
       map,
       directions,
       directionsCenter,
-      stopPhotos
+      directionsZoom,
+      markers,
+      stopPhotos,
+      photoInterval
     } = this.state
 
     const {
-      spotlightLocations
+      lowLevelSpotlightFrac,
+      lowLevelSpotlightConfig,
+      highLevelSpotlightConfigs,
+      stops,
+      photoDuration
     } = this.props
 
-    const spotlightStopIndex = parseInt(randomElement(Object.keys(stopPhotos)))
-
-    let spotlightConfig
-    if (directions) {
-      this.createMapMarkers(spotlightStopIndex)
-
-      // move map to frame spotlight + directions
-      spotlightConfig = randomElement(spotlightLocations)
-      console.log(`picked spotlight location: ${JSON.stringify({ spotlightConfig })}`)
-      const newCenter = new google.maps.LatLng(directionsCenter.lat() + spotlightConfig.mapOffset.lat, directionsCenter.lng() + spotlightConfig.mapOffset.lng)
-      map.setCenter(newCenter)
+    const eastSpotlight = {
+      size: { height: lowLevelSpotlightConfig.size.height, width: lowLevelSpotlightConfig.size.width },
+      offset:  { lat: 0, lng: -1*lowLevelSpotlightConfig.mapOffset.lng },
+      margin: { top: lowLevelSpotlightConfig.margin.top, bottom: lowLevelSpotlightConfig.margin.bottom, left: lowLevelSpotlightConfig.margin.left }
+    }
+    const westSpotlight = {
+      size: { height: lowLevelSpotlightConfig.size.height, width: lowLevelSpotlightConfig.size.width },
+      offset:  { lat: 0, lng: 1*lowLevelSpotlightConfig.mapOffset.lng },
+      margin: { top: lowLevelSpotlightConfig.margin.top, bottom: lowLevelSpotlightConfig.margin.bottom, right: lowLevelSpotlightConfig.margin.right }
     }
 
+    const lowLevelSpotlightProps = {
+      north: eastSpotlight,
+      northeast: eastSpotlight,
+      east: eastSpotlight,
+      southeast: eastSpotlight,
+      south: westSpotlight,
+      southwest: westSpotlight,
+      west: westSpotlight,
+      northwest: westSpotlight
+    }
+
+    // check if ready for spotlights
+    if (!directions || !markers || !stopPhotos) return
+
+    // pick params for new spotlight
+    const spotlightStopIndex = parseInt(randomElement(Object.keys(stopPhotos)))
+    const lowLevelSpotlightState = Math.random() < lowLevelSpotlightFrac
+
+    if (spotlightStopIndex === 0) throw Error(`iterateSpotlight(): cannot yet handle spotlightStopIndex === 0, need to implement conversion to directions origin data`)
+
+    let spotlightConfig, newCenter, newZoom
+    if (lowLevelSpotlightState) {
+      const spotlightPosition = stops[spotlightStopIndex].labelPosition
+      const spotlightProps = lowLevelSpotlightProps[spotlightPosition]
+      const nominalCenter = directions.routes[0].legs[spotlightStopIndex - 1].end_location
+      newCenter = new google.maps.LatLng(nominalCenter.lat() + spotlightProps.offset.lat, nominalCenter.lng() + spotlightProps.offset.lng)
+      newZoom = lowLevelSpotlightConfig.zoom
+      spotlightConfig = {
+        ...lowLevelSpotlightConfig,
+        size: spotlightProps.size,
+        margin: spotlightProps.margin
+      }
+      console.log(`setting spotlightConfig: ${JSON.stringify({ spotlightPosition, spotlightConfig })}`)
+    } else {
+      spotlightConfig = randomElement(highLevelSpotlightConfigs)
+      newCenter = new google.maps.LatLng(directionsCenter.lat() + spotlightConfig.mapOffset.lat, directionsCenter.lng() + spotlightConfig.mapOffset.lng)
+      newZoom = directionsZoom
+    }
+    
+    // update spotlight
+    map.setZoom(directionsZoom) // always zoom out before panning
+    await Bluebird.delay(250)
+
+    this.createMapMarkers(spotlightStopIndex)
+    if (photoInterval) clearInterval(photoInterval)
+    this.iteratePhoto(spotlightStopIndex)
+    const newPhotoInterval = setInterval(this.iteratePhoto.bind(this), photoDuration*1000)
+
+    map.panTo(newCenter)
+    await Bluebird.delay(250)
+    map.setZoom(newZoom)
+
     this.setState({
+      lowLevelSpotlightState,
       spotlightStopIndex,
-      spotlightConfig
+      spotlightConfig,
+      photoInterval: newPhotoInterval
     })
   }
 
@@ -424,14 +525,13 @@ class DrivingMap extends Slide {
 
   content() {
     const {
-      stopPhotos,
       spotlightStopIndex,
-      spotlightConfig
+      spotlightConfig,
+      spotlightPhoto
     } = this.state
 
     const {
       title,
-      photoDuration,
       stops,
       defaultSpotlightConfig
     } = this.props
@@ -441,22 +541,19 @@ class DrivingMap extends Slide {
       ...spotlightConfig
     }
 
-    const spotlightPhotos = stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined) ? 
-      stopPhotos[String(spotlightStopIndex)] : null
+    let spotlightImageElement
+    if (spotlightPhoto && spotlightConfig) {
+      const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait... will need to revisit this
+      const { imgHeight, imgWidth } = this.getMaxImageDimensions(imgWidthOverHeight, _spotlightConfig)
+      spotlightImageElement = (
+        <img 
+          src={spotlightPhoto}
+          style={{ height: imgHeight, width: imgWidth }}
+        />
+      )
+    }
 
-    const spotlightImageElements = spotlightPhotos && spotlightConfig ? 
-      Object.keys(spotlightPhotos).map(photoName => {
-        const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait... will need to revisit this
-        const { imgHeight, imgWidth } = this.getMaxImageDimensions(imgWidthOverHeight, _spotlightConfig)
-        return (
-          <img 
-            src={spotlightPhotos[photoName]}
-            style={{ height: imgHeight, width: imgWidth }}
-          />
-        )
-      }) : []
-
-    const spotlightElement = spotlightImageElements.length ? 
+    const spotlightElement = spotlightImageElement ? 
     (
       <div 
         class='driving-map-spotlight-container'
@@ -473,7 +570,7 @@ class DrivingMap extends Slide {
             class='driving-map-spotlight-carousel'
             style={{ padding: _spotlightConfig.padding }}
           >
-            { randomElement(spotlightImageElements) }
+            { spotlightImageElement }
           </div>
         </div>
       </div>
