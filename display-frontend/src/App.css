@@ -154,7 +154,7 @@ html, body, #root, .App {
   bottom: 20px;
   left: 20px
 } */
-.driving-map-spotlight-title {
+.driving-map-spotlight-header {
   font-size: larger;
   font-weight: bold;
 }

@@ -2,10 +2,12 @@
   Slide to display basic text message
 */
 
+import React from 'react';
 import { Loader } from "@googlemaps/js-api-loader"
 import { Promise as Bluebird } from 'bluebird'
 import { randomElement } from '../../incl/utils.js'
 import Slide from './Slide.js';
+import DynamicImage from '../DynamicImage.js'
 import 'react-responsive-carousel/lib/styles/carousel.min.css'
 import { Carousel } from 'react-responsive-carousel'
 
@@ -70,7 +72,7 @@ class DrivingMap extends Slide {
       lowLevelSpotlightState: false, // currently zoomed in or zoomed out spotlight? Always start with zoomed out
       spotlightStopIndex: null,
       spotlightConfig: null,
-      spotlightPhoto: null
+      spotlightPhotoUrl: null
     }
   }
 
@@ -380,15 +382,14 @@ class DrivingMap extends Slide {
 
     if (spotlightStopIndex === null || spotlightStopIndex === undefined) spotlightStopIndex = this.state.spotlightStopIndex
 
-    const spotlightPhotos = stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined) ? 
-      stopPhotos[String(spotlightStopIndex)] : null
+    if (stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined)) {
+      const spotlightPhotos = stopPhotos[String(spotlightStopIndex)]
+      const spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
 
-    const spotlightPhoto = spotlightPhotos ? spotlightPhotos[randomElement(Object.keys(spotlightPhotos))] : null
-
-    this.setState({
-      spotlightPhoto
-    })
-    console.log(`iteratePhoto: updated spotlightPhoto ${JSON.stringify({ spotlightPhotos, spotlightPhoto })}`)
+      this.setState({
+        spotlightPhotoUrl
+      })
+    }
   }
 
   async iterateSpotlight() {
@@ -454,7 +455,7 @@ class DrivingMap extends Slide {
         size: spotlightProps.size,
         margin: spotlightProps.margin
       }
-      console.log(`setting spotlightConfig: ${JSON.stringify({ spotlightPosition, spotlightConfig })}`)
+      // console.log(`setting spotlightConfig: ${JSON.stringify({ spotlightPosition, spotlightConfig })}`)
     } else {
       spotlightConfig = randomElement(highLevelSpotlightConfigs)
       newCenter = new google.maps.LatLng(directionsCenter.lat() + spotlightConfig.mapOffset.lat, directionsCenter.lng() + spotlightConfig.mapOffset.lng)
@@ -504,33 +505,11 @@ class DrivingMap extends Slide {
 
   hide() {}
 
-  getMaxImageDimensions(imgWidthOverHeight, spotlightConfig) {
-    // need to calculate space in spotlight not available to image
-    const spotlightPadding = parseInt(spotlightConfig.padding)
-    const spotlightTitleHeight = parseInt(spotlightConfig.titleHeight)
-
-    // get max dimensions available to image
-    const spotlightImageMaxHeight = window.innerHeight * parseFloat(spotlightConfig.size.height)/100 - 2*spotlightPadding - spotlightTitleHeight
-    const spotlightImageMaxWidth = window.innerWidth * parseFloat(spotlightConfig.size.width)/100 - 2*spotlightPadding
-
-    // check if this image will be vertically or horizontally contrained
-    const verticallyConstrained = spotlightImageMaxWidth / spotlightImageMaxHeight > imgWidthOverHeight
-
-    // calculated max image dimensions while maintain aspect ratio
-    const imgHeight = verticallyConstrained ? spotlightImageMaxHeight : spotlightImageMaxWidth / imgWidthOverHeight
-    const imgWidth = verticallyConstrained ? spotlightImageMaxHeight * imgWidthOverHeight : spotlightImageMaxWidth
-
-    return {
-      imgHeight,
-      imgWidth
-    }
-  }
-
   content() {
     const {
       spotlightStopIndex,
       spotlightConfig,
-      spotlightPhoto
+      spotlightPhotoUrl
     } = this.state
 
     const {
@@ -544,40 +523,49 @@ class DrivingMap extends Slide {
       ...spotlightConfig
     }
 
-    let spotlightImageElement
-    if (spotlightPhoto && spotlightConfig) {
-      const imgWidthOverHeight = 0.75 // hardcoding to iphone in portrait... will need to revisit this
-      const { imgHeight, imgWidth } = this.getMaxImageDimensions(imgWidthOverHeight, _spotlightConfig)
-      spotlightImageElement = (
-        <img 
-          src={spotlightPhoto}
-          style={{ height: imgHeight, width: imgWidth }}
-        />
-      )
-    }
+    let spotlightElement = ''
+    if (spotlightPhotoUrl && spotlightConfig) {
+      const spotlightPadding = parseInt(_spotlightConfig.padding)
+      const spotlightHeaderHeight = parseInt(_spotlightConfig.headerHeight)
+      const spotlightImageMaxHeight = window.innerHeight * parseFloat(_spotlightConfig.size.height)/100 - 2*spotlightPadding - spotlightHeaderHeight
+      const spotlightImageMaxWidth = window.innerWidth * parseFloat(_spotlightConfig.size.width)/100 - 2*spotlightPadding
 
-    const spotlightElement = spotlightImageElement ? 
-    (
-      <div 
-        class='driving-map-spotlight-container'
-        style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
-      >
-        <div class='driving-map-spotlight'>
-          <div 
-            class='driving-map-spotlight-title'
-            style={{ height: _spotlightConfig.titleHeight }}
-          >
-            {stops[spotlightStopIndex].locationText}
-          </div>
-          <div 
-            class='driving-map-spotlight-carousel'
-            style={{ padding: _spotlightConfig.padding }}
-          >
-            { spotlightImageElement }
+      // console.log(`calculated max dimensions: ${JSON.stringify({ 
+      //   _spotlightConfig, 
+      //   spotlightPadding, 
+      //   spotlightHeaderHeight, 
+      //   innerHeight: window.innerHeight, 
+      //   innerWidth: window.innerWidth,
+      //   spotlightImageMaxHeight, 
+      //   spotlightImageMaxWidth
+      // })}`)
+
+      spotlightElement = (
+        <div 
+          class='driving-map-spotlight-container'
+          style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
+        >
+          <div class='driving-map-spotlight'>
+            <div 
+              class='driving-map-spotlight-header'
+              style={{ height: _spotlightConfig.headerHeight }}
+            >
+              {stops[spotlightStopIndex].locationText}
+            </div>
+            <div 
+              class='driving-map-spotlight-carousel'
+              style={{ padding: _spotlightConfig.padding }}
+            >
+              <DynamicImage 
+                src={spotlightPhotoUrl}
+                maxWidth={spotlightImageMaxWidth}
+                maxHeight={spotlightImageMaxHeight}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    ) : ''
+      )
+    }
 
     return (
       <div class='driving-map-container'>

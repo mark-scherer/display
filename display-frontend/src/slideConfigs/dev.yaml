@@ -39,7 +39,7 @@ slides:
           left: 20px
     defaultSpotlightConfig:   # applies to all spotlights if not overriden
       padding: 5px
-      titleHeight: 25px
+      headerHeight: 25px
     spotlightDuration: 30
     photoDuration: 10
     stops:
