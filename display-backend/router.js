@@ -6,6 +6,11 @@ const Bluebird = require('bluebird')
 const Router = require('@koa/router')
 const {Storage} = require('@google-cloud/storage')
 
+// router name: loaded router file
+const slideRouters = {
+  exploreLivecam: require('./slideRouters/exploreLivecam.js')
+}
+
 const router = new Router()
 const storage = new Storage({keyFilename: '/etc/keys/displayGoogleSA.json'})
 
@@ -63,6 +68,13 @@ router.get('/storage/:bucket/:dir', async (ctx, next) => {
 router.get('/apiKey/:service', (ctx, next) => {
   if (!API_KEYS[ctx.params.service]) ctx.throw(404, 'unsupported service')
   ctx.body = {key: API_KEYS[ctx.params.service]}
+})
+
+_.forEach(slideRouters, (slideRouter, prefix) => {
+  router.use(
+    slideRouter.routes(),
+    slideRouter.allowedMethods()
+  )
 })
 
 module.exports = router

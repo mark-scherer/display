@@ -8,10 +8,14 @@ import React from 'react';
 import Message from "./slides/Message.js"
 import DrivingMap from "./slides/DrivingMap.js"
 import SunMap from "./slides/SunMap.js"
+import FlightRadar from "./slides/FlightRadar.js"
+import ExploreLivecam from "./slides/ExploreLivecam.js"
 const SlideComponents = {
   Message,
   DrivingMap,
-  SunMap
+  SunMap,
+  FlightRadar,
+  ExploreLivecam
 }
 
 const DEFAULT_CONFIG = 'dev.yaml'
@@ -64,8 +68,6 @@ class Display extends React.Component {
       serverUrl
     } = this.state
 
-    console.log(`componentDidMount: got configName: ${JSON.stringify({ configName })}`)
-
     let config
     try {
       config = await fetch(`${serverUrl}/config/${configName}`).then(data => data.json())
@@ -117,7 +119,7 @@ class Display extends React.Component {
     let errorMsg
     if (!config) errorMsg = `loading ${configName}...`
     else if (config.notFound) errorMsg = `didn't find ${configName}... double check the end of the url?`
-    console.log(`error msg? ${JSON.stringify({ errorMsg, config })}`)
+    
     if (errorMsg) {
       return (
         <div class='error-msg-container'>

@@ -207,3 +207,27 @@ html, body, #root, .App {
   position: absolute;
   transform: translate(-50%, 50%)
 }
+
+.explore-livecam-metadata {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  font-size: xx-large;
+  padding: 10px;
+  max-width: 30%
+}
+.explore-livecam-location {
+  font-size: large;
+}
+.explore-livecam-fact {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  max-width: 50%;
+  max-height: 40%;
+  overflow: hidden;
+  background: white;
+  font-size: x-large;
+  padding: 10px;
+}
