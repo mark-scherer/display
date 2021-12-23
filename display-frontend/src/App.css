@@ -228,6 +228,6 @@ html, body, #root, .App {
   max-height: 40%;
   overflow: hidden;
   background: white;
-  font-size: x-large;
+  font-size: large;
   padding: 10px;
 }

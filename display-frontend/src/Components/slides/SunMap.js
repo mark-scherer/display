@@ -67,8 +67,6 @@ class SunMap extends Slide {
 
     if (!currentAnimationTime) currentAnimationTime = this.state.currentAnimationTime
 
-    console.log(`updateAnimation: ${JSON.stringify({ state: this.state })}`)
-
     currentAnimationTime.setMinutes(currentAnimationTime.getMinutes() + ANIMATION_STEP_MINS)
 
     if (currentAnimationTime > realTime) {

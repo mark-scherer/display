@@ -46,7 +46,6 @@ class ExploreLivecam extends Slide {
     if (!feeds) return
 
     const currentFeed = randomElement(Object.values(feeds))
-    console.log(`iterating current feed: ${JSON.stringify({ currentFeed })}`)
 
     this.setState({
       currentFeed
@@ -57,25 +56,24 @@ class ExploreLivecam extends Slide {
     const {
       currentFeed
     } = this.state
-    console.log(`trying to iterate fact: ${JSON.stringify({ facts: currentFeed ? currentFeed.facts : null })}`)
 
     if (!currentFeed || !currentFeed.facts) return
 
-    const currentFact = randomElement(currentFeed.facts).split('.')[0]
-    console.log(`iterated fact: ${JSON.stringify({ currentFact })}`)
+    let currentFact = randomElement(currentFeed.facts)
+    if (currentFact) currentFact = currentFact.split('. ')[0]
 
     this.setState({
       currentFact
     })
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     const {
       feedDuration,
       factDuration
     } = this.props
 
-    this.fetchLiveFeeds()
+    await this.fetchLiveFeeds()
 
     this.iterateFeed()
     const feedInterval = setInterval(this.iterateFeed.bind(this), feedDuration*1000)
