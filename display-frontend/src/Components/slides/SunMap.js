@@ -7,6 +7,7 @@
 
 import React from 'react';
 import Slide from './Slide.js';
+import DynamicImage from '../DynamicImage.js';
 
 const MAP_BASE_URL = 'https://www.timeanddate.com/scripts/sunmap.php'
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
@@ -224,13 +225,17 @@ class SunMap extends Slide {
     // for Equirectangular projection, see https://en.wikipedia.org/wiki/Equirectangular_projection#Forward
     const deg2rad = (deg) => parseFloat(deg) * (Math.PI / 180)
     const midCs2BlC2 = (valMidCs) => (valMidCs+1)/2 // Mid CS (x: -1,1, y: -1,1) to Bottom Left CS (x: 0,1, y: 0,1) conversion
-    const standardLat = 36 // this seems to work well enough
+    const standardLat = 0 // this seems to work well enough
     const locationBottomFrac = (parseFloat(lat)/90)
     const locationLeftFrac = (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
 
     return (
       <div class='message-slide'>
-        <img src={sunMapUrl}/>
+        <DynamicImage 
+          src={sunMapUrl}
+          maxWidth={window.innerWidth}
+          maxWeight={window.innerHeight}
+        />
         {sunDataContent}
         {timeboxContent}
         <div class='sunmap-point' style={{ bottom: `${midCs2BlC2(locationBottomFrac)*100}%`, left: `${midCs2BlC2(locationLeftFrac)*100}%`}}/>
