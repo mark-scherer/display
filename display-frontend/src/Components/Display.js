@@ -24,10 +24,10 @@ class Display extends React.Component {
   constructor(props) {
     super(props)
 
-    // const splitPath = window.location.pathname.split('/')
-    // const configName = splitPath.length > 0 ? splitPath[splitPath.length - 1] : null
-    const urlParams = new URLSearchParams(window.location.search)
-    const configName = urlParams.get('who')
+    const splitPath = window.location.pathname.split('/')
+    const configName = splitPath.length > 0 ? splitPath[splitPath.length - 1] : null
+    // const urlParams = new URLSearchParams(window.location.search)
+    // const configName = urlParams.get('who')
 
     // route requests to actual backend server, not where frontend server from during dev
     const serverUrl = process.env.NODE_ENV === 'development' ? 

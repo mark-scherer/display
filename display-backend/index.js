@@ -6,6 +6,7 @@ const path = require('path')
 const Koa = require('koa')
 const serve = require('koa-static')
 const cors = require('@koa/cors')
+const send = require('koa-send')
 const router = require('./router.js')
 
 const PORT = 8000
@@ -15,9 +16,12 @@ const app = new Koa()
 
 const main = async function() {
   app
-    .use(serve(path.join(__dirname, BUILD_DIR)))
     .use(cors())
     .use(router.routes(), router.allowedMethods())
+    .use(serve(path.join(__dirname, BUILD_DIR)))
+    .use(async (ctx) => {
+      if (ctx.status === 404) await send(ctx, 'index.html', { root: BUILD_DIR }) // send homepage on 404s
+    })
 
   app.listen(PORT)
   console.log(`server listening on http://localhost:${PORT}`)

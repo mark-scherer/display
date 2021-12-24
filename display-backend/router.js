@@ -30,6 +30,7 @@ router.use(async (ctx, next) => {
   try {
     await next()
   } catch (error) {
+    console.log(`koa-router throwing error: ${error}`)
     ctx.throw(error)
   }
 
