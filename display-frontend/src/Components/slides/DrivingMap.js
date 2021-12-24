@@ -575,7 +575,7 @@ class DrivingMap extends Slide {
     }
 
     return (
-      <div class='driving-map-container'>
+      <div class='slide driving-map-container'>
         <div id='driving-map'></div>
         <div class='driving-map-title'>{title}</div>
         {spotlightElement}

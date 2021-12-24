@@ -129,7 +129,9 @@ class ExploreLivecam extends Slide {
     } = this.state
 
     let feedElement = (
-      <div>loading feeds!</div>
+      <div class='slide'>
+        <div>loading feeds!</div>
+      </div>
     )
     let feedMetadataElement = '', feedFactElement = ''
     if (currentFeed) {
@@ -163,7 +165,7 @@ class ExploreLivecam extends Slide {
     
 
     return (
-      <div class='message-slide'>
+      <div class='slide'>
         {feedElement}
         {feedMetadataElement}
         {feedFactElement}

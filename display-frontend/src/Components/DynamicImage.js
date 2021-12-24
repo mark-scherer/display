@@ -60,7 +60,10 @@ class DynamicImage extends React.Component {
     }
 
     return (
-      <div>
+      <div 
+        class='dynamic-image-container' 
+        style={{width, height, maxWidth, maxHeight }}
+      >
         <img
           src={src}
           style={{width, height, maxWidth, maxHeight }}

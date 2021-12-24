@@ -25,7 +25,7 @@ class Message extends Slide {
     } = this.props
 
     return (
-      <div class='message-container'
+      <div class='slide message-container'
         style={{ background }}
       >
         <div class='message'>{msg}</div>

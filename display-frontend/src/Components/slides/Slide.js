@@ -80,11 +80,13 @@ class Slide extends React.Component {
 
     if (!displayed) return null
 
-    return (
-      <div class='slide'>
-        {slideContent}
-      </div>
-    )
+    // return (
+    //   <div class='slide'>
+    //     {slideContent}
+    //   </div>
+    // )
+
+    return slideContent
   }
 }
 
