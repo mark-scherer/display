@@ -4,9 +4,9 @@ duration: 30
 slides:
   # - type: Message
   #   msg: Merry Chirstmas Dad!
-  - type: ExploreLivecam
-    feedDuration: 30
-    factDuration: 10
   - type: SunMap
     lat: 38.44
     lng: -85.61
+  - type: ExploreLivecam
+    feedDuration: 30
+    factDuration: 10
