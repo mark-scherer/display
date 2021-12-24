@@ -9,27 +9,30 @@ import React from 'react';
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js';
 
-const MAP_BASE_URL = {
-  'timeanddate': 'https://www.timeanddate.com/scripts/sunmap.php', // prospect IP got banned 12/24/21, contacted webmaster
-  'opentopia': 'http://images.opentopia.com/sunlight/world_sunlight_map_rectangular.jpg' // uses die.net
-  // 'die.net':  'https://static.die.net/earth/mercator/1000.jpg' // image doesn't render in tag, not yet fully implemented or tested... contacted webmaster on 12/24/21
-  // 'tutiempo': // is a canvas, would need to embed, could be complicated
-
-
+const MAP_SOURCE_GUIDE = {
+  'timeanddate': {
+    baseUrl: 'https://www.timeanddate.com/scripts/sunmap.php', // prospect IP got banned 12/24/21, contacted webmaster
+    animate: true,
+  },
+  'opentopia': {
+    baseUrl: 'http://images.opentopia.com/sunlight/world_sunlight_map_rectangular.jpg', // uses die.net
+    animate: false
+  },
+  // 'die.net': {
+  //   baseUrl: 'https://static.die.net/earth/mercator/1000.jpg' // image doesn't render in tag, not yet fully implemented or tested... contacted webmaster on 12/24/21
+  // },
+  // 'tutiempo': {
+  //   baseUrl: // is a canvas, would need to embed, could be complicated
+  // } 
 }
+
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
 
-// original animation params
-// const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
-// const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
-// const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
-// const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
-
-// disabled animation due to timeanddate blocking us
-const ANIMATION_LENGTH_HOURS = 0 // number of hours of sun history to show
-const ANIMATION_DURATION_SECS = 1 // number of seconds for animation to real time to last
-const ANIMATION_STEP_MINS = 60 // number of minutes to move up with each animation step
-const ANIMATION_CYCLE_SECS = 3000 // number of secs until animation restarts
+// animation params, when MAP_SOURCE_GUIDE[mapSource].animate === true
+const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
+const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
+const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
+const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 
 class SunMap extends Slide {
   static requiredArgs = [
@@ -44,20 +47,17 @@ class SunMap extends Slide {
       mapSource
     } = this.props
 
-    if (!MAP_BASE_URL[mapSource]) throw Error(`invalid mapSource prop: ${JSON.stringify({ mapSource, availableMapSources: Object.keys(MAP_BASE_URL) })}`)
-
-    const realTime = new Date()
+    if (!MAP_SOURCE_GUIDE[mapSource]) throw Error(`invalid mapSource prop: ${JSON.stringify({ mapSource, availableMapSources: Object.keys(MAP_SOURCE_GUIDE) })}`)
 
     this.state = {
       mapSource: mapSource, // want this to be state so can dynamically update if needed
-      realTime,
-      currentAnimationTime: null,
+      currentlyDisplayedTime: null,
       animationInterval: null,
       animationRestartInterval: null
     }
   }
 
-  // can pass currentAnimationTime as arg if state not yet set
+  // can pass realTime as arg if state not yet set
   triggerAnimation(realTime) {
     let {
       animationInterval
@@ -67,43 +67,41 @@ class SunMap extends Slide {
 
     if (!realTime) realTime = this.state.realTime
 
-    const currentAnimationTime = new Date(realTime)
-    currentAnimationTime.setHours(realTime.getHours() - ANIMATION_LENGTH_HOURS)
-    currentAnimationTime.setMinutes(0)
+    const currentlyDisplayedTime = new Date(realTime)
+    currentlyDisplayedTime.setHours(realTime.getHours() - ANIMATION_LENGTH_HOURS)
+    currentlyDisplayedTime.setMinutes(0)
+
+    console.log(`Sunmap: creating animation starting at ${currentlyDisplayedTime}`)
 
     const animationSteps = ANIMATION_LENGTH_HOURS*60 / ANIMATION_STEP_MINS
     const animationDelay = ANIMATION_DURATION_SECS*1000 / animationSteps
-    this.updateAnimation(currentAnimationTime)
     animationInterval = setInterval(this.updateAnimation.bind(this), animationDelay)
 
     this.setState({
-      currentAnimationTime,
+      currentlyDisplayedTime,
       animationInterval
     })
   }
 
-  // can pass currentAnimationTime as arg if state not yet set
-  updateAnimation(currentAnimationTime) {
+  // can pass currentlyDisplayedTime as arg if state not yet set
+  updateAnimation(currentlyDisplayedTime) {
     const {
       realTime,
       animationInterval
     } = this.state
 
-    if (!currentAnimationTime) currentAnimationTime = this.state.currentAnimationTime
+    if (!currentlyDisplayedTime) currentlyDisplayedTime = this.state.currentlyDisplayedTime
 
-    currentAnimationTime.setMinutes(currentAnimationTime.getMinutes() + ANIMATION_STEP_MINS)
-    console.log(`Sunmap: updating animation to ${currentAnimationTime}`)
+    currentlyDisplayedTime.setMinutes(currentlyDisplayedTime.getMinutes() + ANIMATION_STEP_MINS)
+    console.log(`Sunmap: updating animation to ${currentlyDisplayedTime}`)
 
-    if (currentAnimationTime > realTime) {
+    if (currentlyDisplayedTime > realTime) {
       clearInterval(animationInterval)
-      currentAnimationTime = realTime
+      currentlyDisplayedTime = realTime
     }
 
-    const sunMapUrl = this.getSunMap(currentAnimationTime)
-
     this.setState({
-      sunMapUrl,
-      currentAnimationTime
+      currentlyDisplayedTime
     })
   }
 
@@ -112,7 +110,7 @@ class SunMap extends Slide {
   }
 
   // where time is a date Object  
-  getSunMap(time) {
+  getSunMapUrl(time) {
     const {
       mapSource
     } = this.state
@@ -120,11 +118,11 @@ class SunMap extends Slide {
     const formattedDate = `${this.formatTime(time.getUTCFullYear(), 4)}${this.formatTime(time.getUTCMonth() + 1)}${this.formatTime(time.getUTCDate())}`
     const formattedTime = `${this.formatTime(time.getUTCHours())}${this.formatTime(time.getUTCMinutes())}`
 
-    let url
-    if (mapSource === 'timeanddate') url = `${MAP_BASE_URL[mapSource]}?iso=${formattedDate}T${formattedTime}&earth=1`
-    else if (mapSource === 'die.net') url = MAP_BASE_URL[mapSource]
-    else if (mapSource === 'opentopia') url = MAP_BASE_URL[mapSource]
-    else throw Error(`SunMap.getSunMap(): did not implement for mapSource: ${mapSource}`)
+    let url, baseUrl = MAP_SOURCE_GUIDE[mapSource].baseUrl
+    if (mapSource === 'timeanddate') url = `${baseUrl}?iso=${formattedDate}T${formattedTime}&earth=1`
+    else if (mapSource === 'die.net') url = baseUrl
+    else if (mapSource === 'opentopia') url = baseUrl
+    else throw Error(`SunMap.getSunMapUrl(): did not implement for mapSource: ${mapSource}`)
 
     return url
   }
@@ -179,12 +177,24 @@ class SunMap extends Slide {
   }
 
   show() {
-    this.triggerAnimation()
-    const animationRestartInterval = setInterval(this.triggerAnimation.bind(this), ANIMATION_CYCLE_SECS*1000)
-    
+    let {
+      mapSource,
+      animationRestartInterval
+    } = this.state
+
+    const realTime = new Date()
+    const currentlyDisplayedTime = realTime
+
     this.setState({
+      realTime,
+      currentlyDisplayedTime,
       animationRestartInterval,
     })
+
+    if (MAP_SOURCE_GUIDE[mapSource].animate) {
+      this.triggerAnimation(realTime)
+      animationRestartInterval = setInterval(this.triggerAnimation.bind(this), ANIMATION_CYCLE_SECS*1000)
+    }
   }
 
   hide() {
@@ -203,19 +213,20 @@ class SunMap extends Slide {
 
     const {
       mapSource,
-      sunMapUrl,
-      currentAnimationTime,
+      currentlyDisplayedTime,
       realTime,
       sunDataToday,
       sunDataYday
     } = this.state
 
-    let timeboxContent = ''
-    if (currentAnimationTime) {
-      const timeZoneParts = currentAnimationTime.toLocaleString('en-US', {timeZoneName: 'short'}).split(' ')
-      const formattedAnimationTime = `${currentAnimationTime.toLocaleTimeString('en-US', {timeStyle: 'short'})} ${timeZoneParts[timeZoneParts.length - 1]}`
+    let sunMapUrl,  timeboxContent = ''
+    if (currentlyDisplayedTime) {
+      sunMapUrl = this.getSunMapUrl(currentlyDisplayedTime)
 
-      const timeDiffMins = (currentAnimationTime.valueOf() - realTime.valueOf())/1000/60
+      const timeZoneParts = currentlyDisplayedTime.toLocaleString('en-US', {timeZoneName: 'short'}).split(' ')
+      const formattedAnimationTime = `${currentlyDisplayedTime.toLocaleTimeString('en-US', {timeStyle: 'short'})} ${timeZoneParts[timeZoneParts.length - 1]}`
+
+      const timeDiffMins = (currentlyDisplayedTime.valueOf() - realTime.valueOf())/1000/60
       const timeDiffHours = Math.floor(timeDiffMins/60)
       const formattedTimeDiffHours = timeDiffHours < 0 ? `-${this.formatTime(Math.abs(timeDiffHours))}` : this.formatTime(timeDiffHours)
       const formattedTimeDiff = timeDiffMins !== 0 ?
