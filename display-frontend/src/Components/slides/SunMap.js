@@ -35,12 +35,14 @@ class SunMap extends Slide {
     }
   }
 
-  // show() {}
-
-  // hide() {}
-
   // can pass currentAnimationTime as arg if state not yet set
   triggerAnimation(realTime) {
+    let {
+      animationInterval
+    } = this.state
+
+    if (animationInterval) clearInterval(animationInterval)
+
     if (!realTime) realTime = this.state.realTime
 
     const currentAnimationTime = new Date(realTime)
@@ -50,7 +52,7 @@ class SunMap extends Slide {
     const animationSteps = ANIMATION_LENGTH_HOURS*60 / ANIMATION_STEP_MINS
     const animationDelay = ANIMATION_DURATION_SECS*1000 / animationSteps
     this.updateAnimation(currentAnimationTime)
-    const animationInterval = setInterval(this.updateAnimation.bind(this), animationDelay)
+    animationInterval = setInterval(this.updateAnimation.bind(this), animationDelay)
 
     this.setState({
       currentAnimationTime,
@@ -121,7 +123,10 @@ class SunMap extends Slide {
   }
 
   async componentDidMount() {
-    this.show()
+    const {
+      displayed
+    } = this.props
+    if (displayed) this.show()
     
     const {
       lat,
