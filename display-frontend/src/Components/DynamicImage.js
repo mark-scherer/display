@@ -48,6 +48,8 @@ class DynamicImage extends React.Component {
 
     const {
       src,
+      maxWidth,
+      maxHeight
     } = this.props
 
     let width, height
@@ -59,7 +61,7 @@ class DynamicImage extends React.Component {
     return (
       <img
         src={src}
-        style={{width, height}}
+        style={{width, height, maxWidth, maxHeight }}
         onLoad={this.handleOnLoad.bind(this)}
       />
     )
