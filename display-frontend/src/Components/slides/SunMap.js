@@ -11,10 +11,10 @@ import DynamicImage from '../DynamicImage.js';
 
 const MAP_BASE_URL = 'https://www.timeanddate.com/scripts/sunmap.php'
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
-const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
-const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
-const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
-const ANIMATION_CYCLE_SECS = 15 // number of secs until animation restarts
+const ANIMATION_LENGTH_HOURS = 1 // number of hours of sun history to show
+const ANIMATION_DURATION_SECS = 2 // number of seconds for animation to real time to last
+const ANIMATION_STEP_MINS = 15 // number of minutes to move up with each animation step
+const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 
 class SunMap extends Slide {
   static requiredArgs = [
@@ -248,7 +248,7 @@ class SunMap extends Slide {
     const locationLeftFrac = (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
 
     return (
-      <div class='message-slide'>
+      <div>
         <DynamicImage 
           src={sunMapUrl}
           maxWidth={window.innerWidth}
