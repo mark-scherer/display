@@ -9,25 +9,47 @@ import React from 'react';
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js';
 
-const MAP_BASE_URL = 'https://www.timeanddate.com/scripts/sunmap.php'
+const MAP_BASE_URL = {
+  'timeanddate': 'https://www.timeanddate.com/scripts/sunmap.php', // prospect IP got banned 12/24/21, contacted webmaster
+  'opentopia': 'http://images.opentopia.com/sunlight/world_sunlight_map_rectangular.jpg' // uses die.net
+  // 'die.net':  'https://static.die.net/earth/mercator/1000.jpg' // image doesn't render in tag, not yet fully implemented or tested... contacted webmaster on 12/24/21
+  // 'tutiempo': // is a canvas, would need to embed, could be complicated
+
+
+}
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
-const ANIMATION_LENGTH_HOURS = 1 // number of hours of sun history to show
-const ANIMATION_DURATION_SECS = 2 // number of seconds for animation to real time to last
-const ANIMATION_STEP_MINS = 15 // number of minutes to move up with each animation step
-const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
+
+// original animation params
+// const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
+// const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
+// const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
+// const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
+
+// disabled animation due to timeanddate blocking us
+const ANIMATION_LENGTH_HOURS = 0 // number of hours of sun history to show
+const ANIMATION_DURATION_SECS = 1 // number of seconds for animation to real time to last
+const ANIMATION_STEP_MINS = 60 // number of minutes to move up with each animation step
+const ANIMATION_CYCLE_SECS = 3000 // number of secs until animation restarts
 
 class SunMap extends Slide {
   static requiredArgs = [
+    'mapSource',
     'lat',
     'lng'
   ]
 
   constructor(props) {
     super(props)
+    const {
+      mapSource
+    } = this.props
+
+    if (!MAP_BASE_URL[mapSource]) throw Error(`invalid mapSource prop: ${JSON.stringify({ mapSource, availableMapSources: Object.keys(MAP_BASE_URL) })}`)
 
     const realTime = new Date()
 
     this.state = {
+      mapSource: mapSource, // want this to be state so can dynamically update if needed
       realTime,
       currentAnimationTime: null,
       animationInterval: null,
@@ -70,6 +92,7 @@ class SunMap extends Slide {
     if (!currentAnimationTime) currentAnimationTime = this.state.currentAnimationTime
 
     currentAnimationTime.setMinutes(currentAnimationTime.getMinutes() + ANIMATION_STEP_MINS)
+    console.log(`Sunmap: updating animation to ${currentAnimationTime}`)
 
     if (currentAnimationTime > realTime) {
       clearInterval(animationInterval)
@@ -90,10 +113,20 @@ class SunMap extends Slide {
 
   // where time is a date Object  
   getSunMap(time) {
+    const {
+      mapSource
+    } = this.state
+
     const formattedDate = `${this.formatTime(time.getUTCFullYear(), 4)}${this.formatTime(time.getUTCMonth() + 1)}${this.formatTime(time.getUTCDate())}`
     const formattedTime = `${this.formatTime(time.getUTCHours())}${this.formatTime(time.getUTCMinutes())}`
 
-    return `${MAP_BASE_URL}?iso=${formattedDate}T${formattedTime}&earth=1`
+    let url
+    if (mapSource === 'timeanddate') url = `${MAP_BASE_URL[mapSource]}?iso=${formattedDate}T${formattedTime}&earth=1`
+    else if (mapSource === 'die.net') url = MAP_BASE_URL[mapSource]
+    else if (mapSource === 'opentopia') url = MAP_BASE_URL[mapSource]
+    else throw Error(`SunMap.getSunMap(): did not implement for mapSource: ${mapSource}`)
+
+    return url
   }
 
   async getSunData(lat, lng, date) {
@@ -169,6 +202,7 @@ class SunMap extends Slide {
     } = this.props
 
     const {
+      mapSource,
       sunMapUrl,
       currentAnimationTime,
       realTime,
@@ -238,25 +272,30 @@ class SunMap extends Slide {
       )
     }
 
-    
-
-    // for Equirectangular projection, see https://en.wikipedia.org/wiki/Equirectangular_projection#Forward
+    let lngAsFrac, latAsFrac
     const deg2rad = (deg) => parseFloat(deg) * (Math.PI / 180)
     const midCs2BlC2 = (valMidCs) => (valMidCs+1)/2 // Mid CS (x: -1,1, y: -1,1) to Bottom Left CS (x: 0,1, y: 0,1) conversion
-    const standardLat = 0 // this seems to work well enough
-    const locationBottomFrac = (parseFloat(lat)/90)
-    const locationLeftFrac = (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
-
+    if (mapSource === 'timeanddate') {
+      // for Equirectangular projection, see https://en.wikipedia.org/wiki/Equirectangular_projection#Forward
+      const standardLat = 0 // this seems to work well enough
+      latAsFrac = (parseFloat(lat)/90)
+      lngAsFrac = (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
+    } else if (mapSource === 'opentopia') {
+      // seems to be mercator? can't get it to work so just make sure if offscreen
+      latAsFrac = -1
+      lngAsFrac = -1
+    } else throw Error(`Sunmap.render(): location projections not implemented for mapSource: ${mapSource}`)
     return (
       <div>
         <DynamicImage 
           src={sunMapUrl}
           maxWidth={window.innerWidth}
           maxWeight={window.innerHeight}
-        />
+        >
+          <div class='sunmap-point' style={{bottom: `${midCs2BlC2(latAsFrac)*100}%`, left: `${midCs2BlC2(lngAsFrac)*100}%`}}/>
+        </DynamicImage>
         {sunDataContent}
         {timeboxContent}
-        <div class='sunmap-point' style={{ bottom: `${midCs2BlC2(locationBottomFrac)*100}%`, left: `${midCs2BlC2(locationLeftFrac)*100}%`}}/>
       </div>
     )
   }
