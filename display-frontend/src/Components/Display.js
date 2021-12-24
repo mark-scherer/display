@@ -39,6 +39,7 @@ class Display extends React.Component {
         serverUrl,
         config: null,
         currentSlideIndex: -1,
+        currentSlideDuration: null,
         nextSlideInterval: null,
         fullscreen: false
       }    
@@ -63,9 +64,17 @@ class Display extends React.Component {
     })
   }
 
-  iterateSlide(forward, config) {
+  /*
+    params
+      recreateSlideInterval: force iterateSlide interval to be recreated, should be true if called on arrow key inputs
+      forward: iterate one slide foward? If not then backwards
+      config: optional arg to set config instead of reading from state, useful if config not yet set in state
+  */
+  iterateSlide(recreateSlideInterval=false, forward=true, config=null) {
     let {
-      currentSlideIndex
+      currentSlideIndex,
+      currentSlideDuration,
+      nextSlideInterval
     } = this.state
 
     if (!config) config = this.state.config
@@ -80,16 +89,22 @@ class Display extends React.Component {
       if (currentSlideIndex < 0) currentSlideIndex = config.slides.length - 1
     }
 
-    console.log(`iterating slide: ${JSON.stringify({ forward, currentSlideIndex })}`)
+    const nextSlideDuration = config.slides[currentSlideIndex].duration || config.duration
+    if (nextSlideDuration !== currentSlideDuration || recreateSlideInterval) {
+      clearInterval(nextSlideInterval)
+      nextSlideInterval = setInterval(this.iterateSlide.bind(this), nextSlideDuration*1000)
+    }
 
     this.setState({ 
-      currentSlideIndex
+      currentSlideIndex,
+      currentSlideDuration: nextSlideDuration,
+      nextSlideInterval
     })
   }
 
   handleKeyDown(event) {
-    if (event.keyCode === 39) this.iterateSlide(true) // forward arrow
-    else if (event.keyCode === 37) this.iterateSlide(false) // backward arrow
+    if (event.keyCode === 39) this.iterateSlide(true, true) // forward arrow
+    else if (event.keyCode === 37) this.iterateSlide(true, false) // backward arrow
     
     event.stopPropagation()
   }
@@ -120,9 +135,7 @@ class Display extends React.Component {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
     })
 
-    // create slide interval
-    this.iterateSlide(true, config)
-    const nextSlideInterval = setInterval(this.iterateSlide.bind(this, true), config.duration*1000)
+    this.iterateSlide(true, true, config)
 
     document.addEventListener('keydown', this.handleKeyDown.bind(this))
 
