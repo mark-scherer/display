@@ -203,7 +203,7 @@ class SunMap extends Slide {
       const moreSun = sunDurationDifferenceHours > 0
 
       const formatSunDuration = (sunDurationHours) => {
-        return `${Math.floor(sunDurationHours)}:${this.formatTime(parseInt(sunDurationHours % 60))}`
+        return `${Math.floor(sunDurationHours)}:${this.formatTime(parseInt((sunDurationHours*60) % 60))}`
       }
 
       sunDataContent = (
