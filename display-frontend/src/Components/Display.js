@@ -8,13 +8,13 @@ import React from 'react';
 import Message from "./slides/Message.js"
 import DrivingMap from "./slides/DrivingMap.js"
 import SunMap from "./slides/SunMap.js"
-import FlightRadar from "./slides/FlightRadar.js"
+// import FlightRadar from "./slides/FlightRadar.js"
 import ExploreLivecam from "./slides/ExploreLivecam.js"
 const SlideComponents = {
   Message,
   DrivingMap,
   SunMap,
-  FlightRadar,
+  // FlightRadar,
   ExploreLivecam
 }
 
