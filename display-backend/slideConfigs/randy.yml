@@ -6,9 +6,12 @@ slides:
     msg: Merry Chirstmas Dad!
     background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'
     duration: 5
-  # - type: SunMap
-  #   lat: 38.44
-  #   lng: -85.61
+  - type: SunMap
+    mapSource: opentopia
+    # mapSource: timeanddate
+    lat: 38.44
+    lng: -85.61
+    duration: 15
   - type: ExploreLivecam
     feedDuration: 30
     factDuration: 10
