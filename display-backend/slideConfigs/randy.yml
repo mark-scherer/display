@@ -2,11 +2,14 @@
 ---
 duration: 30
 slides:
-  # - type: Message
-  #   msg: Merry Chirstmas Dad!
-  - type: SunMap
-    lat: 38.44
-    lng: -85.61
+  - type: Message
+    msg: Merry Chirstmas Dad!
+    background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'
+    duration: 5
+  # - type: SunMap
+  #   lat: 38.44
+  #   lng: -85.61
   - type: ExploreLivecam
     feedDuration: 30
     factDuration: 10
+    duration: 60

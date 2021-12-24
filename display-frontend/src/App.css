@@ -87,15 +87,23 @@ html, body, #root, .App {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
+  font-size: xx-large;
 }
 
 /* specific slide styling */
-.message-slide {
+.message-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.message {
   animation: flip-message 0.25s ease;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
-  font-size: xx-large;
-  position: relative;
+  font-size: larger;
 }
 @keyframes flip-message {
   0% {
@@ -153,22 +161,11 @@ html, body, #root, .App {
   width: fit-content;
   height: fit-content;
 }
-/* .driving-map-spotlight-container.northeast {
-  top: 20px;
-  right: 50px
-}
-.driving-map-spotlight-container.southwest {
-  bottom: 20px;
-  left: 20px
-} */
 .driving-map-spotlight-header {
-  font-size: larger;
+  font-size: large;
   font-weight: bold;
+  padding-top: 5px;
 }
-/* .driving-map-spotlight-carousel {
-  padding: 5px;
-} */
-
 
 .sunmap-timebox {
   position: absolute;

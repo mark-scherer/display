@@ -6,7 +6,8 @@ import Slide from './Slide.js';
 
 class Message extends Slide {
   static requiredArgs = [
-    'msg'
+    'msg',
+    'background'
   ]
 
   constructor(props) {
@@ -19,11 +20,16 @@ class Message extends Slide {
 
   content() {
     const {
-      msg
+      msg,
+      background
     } = this.props
 
     return (
-      <div class='message-slide'>{msg}</div>
+      <div class='message-container'
+        style={{ background }}
+      >
+        <div class='message'>{msg}</div>
+      </div>
     )
   }
 }
