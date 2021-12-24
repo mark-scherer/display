@@ -200,9 +200,12 @@ html, body, #root, .App, .display, .slide-container, .slide {
 .sunmap-sundata .negative {
   color: red;
 }
-.sunmap-point {
+.sunmap-point-container {
   position: absolute;
+}
+.sunmap-point {
   background: white;
+  position: absolute;
   transform: translate(-50%, 50%)
 }
 .sunmap-point.primary {
@@ -215,6 +218,28 @@ html, body, #root, .App, .display, .slide-container, .slide {
   height: 10px;
   width: 10px;
   border-radius: 10px;
+}
+.sunmap-point-label {
+  width: fit-content;
+  height: fit-content;
+  background: white;
+  font-size: small;
+  padding: 0 4px;
+}
+.sunmap-point-label.north {
+  transform: translate(-50%, calc(-200% + 20px));
+}
+.sunmap-point-label.south {
+  transform: translate(-50%, 20px);
+}
+.sunmap-point-label.east {
+  transform: translate(20px, -50%);
+}
+.sunmap-point-label.west {
+  transform: translate(calc(-100% - 10px), -50%);
+}
+.sunmap-point-label * {
+  white-space: nowrap;
 }
 
 .explore-livecam-feed, .explore-livecam-feed * {

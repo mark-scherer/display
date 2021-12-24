@@ -7,11 +7,82 @@ slides:
     background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'
     duration: 5
   - type: SunMap
+    duration: 15
     mapSource: opentopia
     # mapSource: timeanddate
-    lat: 38.44
-    lng: -85.61
-    duration: 15
+    originLocation:
+      lat: 38.44
+      lng: -85.61
+    otherLocations:
+      # family cities
+      - name: San Francisco
+        timezone: America/Los_Angeles
+        labelLocation: west
+        lat: 37.77
+        lng: -122.39
+      - name: Dallas
+        timezone: America/Chicago
+        labelLocation: south
+        lat: 32.84
+        lng: -96.78
+      - name: DC
+        timezone: America/New_York
+        labelLocation: east
+        lat: 38.87
+        lng: -77.06
+
+      # random cities
+      - name: Sydney
+        timezone: Australia/Sydney
+        labelLocation: south
+        lat: -33.89
+        lng: 151.21
+      - name: Auckland
+        timezone: Pacific/Auckland
+        labelLocation: south
+        lat: -36.89
+        lng: 174.79
+      - name: Seoul
+        timezone: Asia/Seoul
+        labelLocation: east
+        lat: 37.54
+        lng: 126.99
+      - name: Buenos Aires
+        timezone: America/Argentina/Buenos_Aires
+        labelLocation: south
+        lat: -34.80
+        lng: -58.18
+      - name: London
+        timezone: Europe/London
+        labelLocation: north
+        lat: 51.51
+        lng: -0.13
+      - name: Cape Town
+        timezone: Africa/Johannesburg
+        labelLocation: south
+        lat: -34.03
+        lng: 18.53
+      - name: Anchorage
+        timezone: America/Anchorage
+        labelLocation: north
+        lat: 61.16
+        lng: -149.93
+      - name: Honolulu
+        timezone: US/Hawaii
+        labelLocation: south
+        lat: 21.30
+        lng: -157.86
+      - name: Mumbai
+        timezone: Asia/Calcutta
+        labelLocation: south
+        lat: 19.08
+        lng: 72.89
+      - name: Cairo
+        timezone: Africa/Cairo
+        labelLocation: south
+        lat: 30.04
+        lng: 31.24
+
   - type: ExploreLivecam
     feedDuration: 30
     factDuration: 10

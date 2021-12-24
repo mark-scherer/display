@@ -13,10 +13,17 @@ const MAP_SOURCE_GUIDE = {
   'timeanddate': {
     baseUrl: 'https://www.timeanddate.com/scripts/sunmap.php', // prospect IP got banned 12/24/21, contacted webmaster
     animate: true,
+    projection: 'equirectangular',
+    standardLat: 0
   },
   'opentopia': {
     baseUrl: 'http://images.opentopia.com/sunlight/world_sunlight_map_rectangular.jpg', // uses die.net
-    animate: false
+    animate: false,
+    projection: 'mercator',
+    northTruncationLat: 75,
+    southTruncationLat: -75,
+    eastTruncationLng: -170,
+    westTruncationLng: 190, // shows entire earth but doesn't split at date line
   },
   // 'die.net': {
   //   baseUrl: 'https://static.die.net/earth/mercator/1000.jpg' // image doesn't render in tag, not yet fully implemented or tested... contacted webmaster on 12/24/21
@@ -37,8 +44,7 @@ const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 class SunMap extends Slide {
   static requiredArgs = [
     'mapSource',
-    'lat',
-    'lng'
+    'originLocation'
   ]
 
   constructor(props) {
@@ -153,6 +159,83 @@ class SunMap extends Slide {
     }
   }
 
+  /*
+    projects lat/lng into usable css bottom/left properties
+    lat/lng
+      lat: [-90, 90], 0 at equator
+      lng: [-180, 180], 0 at prime meridian
+    bottom/left
+      bottom: [0%, 100%], 0 at bottom
+      left: [0%, 100%], 0 at left
+    - lat/lng's centered CS referred to as 'mid' or 'middle'
+    - bottom/left's CS referred to as 'BL'
+  */
+  projectLatLng(lat, lng) {
+    const deg2rad = (deg) => parseFloat(deg) * (Math.PI / 180)
+    const notVisible = { bottom: '-100px', left: '-100px' }
+
+    const {
+      mapSource
+    } = this.state
+
+    if (!mapSource) return notVisible
+
+    const {
+      projection,
+      standardLat,
+      northTruncationLat,
+      southTruncationLat,
+      eastTruncationLng,
+      westTruncationLng
+    } = MAP_SOURCE_GUIDE[mapSource]
+
+    let projectLat, projectLng // these are still using middle CS (liek lat/lng) but range is [-1, 1]
+    if (projection === 'equirectangular') {
+      // see https://en.wikipedia.org/wiki/Equirectangular_projection#Forward
+      projectLat = (lat) => (parseFloat(lat)/90)
+      projectLng = (lng) => (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
+
+    } else if (projection === 'mercator') {
+      // see https://en.wikipedia.org/wiki/Mercator_projection#Derivation
+      projectLat = (lat) => Math.log(Math.tan( (Math.PI/4) + (deg2rad(lat)/2) ))
+      projectLng = (lng) => (parseFloat(lng) / 180)
+    } else throw Error(`Sunmap.render(): projection specified by mapSource not yet implemented: ${JSON.stringify({ mapSource, projection })}`)
+
+    const nominalLatAsFrac = projectLat(lat)
+    const nominalLngAsFrac = projectLng(lng)
+
+    const projectedNorthTruncationLat = projectLat(northTruncationLat)
+    const projectedSouthTruncationLat = projectLat(southTruncationLat)
+    const projectedEastTruncationLng = projectLng(eastTruncationLng)
+    const projectedWestTruncationLng = projectLng(westTruncationLng)
+
+    const latAsFrac = (nominalLatAsFrac - projectedSouthTruncationLat) / (projectedNorthTruncationLat - projectedSouthTruncationLat)
+    const lngAsFrac =  (nominalLngAsFrac - projectedEastTruncationLng) / (projectedWestTruncationLng - projectedEastTruncationLng)
+
+    console.log(`Sumnap.projectLatLng(): ${JSON.stringify({
+      projection,
+      lat,
+      lng,
+      nominalLatAsFrac,
+      nominalLngAsFrac,
+      latAsFrac,
+      lngAsFrac,
+      eastTruncationLng,
+      westTruncationLng,
+      northTruncationLat,
+      southTruncationLat,
+      projectedEastTruncationLng,
+      projectedWestTruncationLng,
+      projectedNorthTruncationLat,
+      projectedSouthTruncationLat
+    })}`)
+
+    return {
+      bottom: `${latAsFrac*100}%`,
+      left: `${lngAsFrac*100}%`
+    }
+  }
+
   async componentDidMount() {
     const {
       displayed
@@ -160,15 +243,14 @@ class SunMap extends Slide {
     if (displayed) this.show()
     
     const {
-      lat,
-      lng
+      originLocation
     } = this.props
 
     const today = new Date()
     const yday = new Date(today)
     yday.setDate(today.getDate() - 1)
-    const sunDataToday = await this.getSunData(lat, lng, today)
-    const sunDataYday = await this.getSunData(lat, lng, yday)
+    const sunDataToday = await this.getSunData(originLocation.lat, originLocation.lng, today)
+    const sunDataYday = await this.getSunData(originLocation.lat, originLocation.lng, yday)
 
     this.setState({
       sunDataToday,
@@ -207,8 +289,8 @@ class SunMap extends Slide {
 
   content() {
     const {
-      lat,
-      lng
+      originLocation,
+      otherLocations
     } = this.props
 
     const {
@@ -283,29 +365,39 @@ class SunMap extends Slide {
       )
     }
 
-    let lngAsFrac, latAsFrac
-    const deg2rad = (deg) => parseFloat(deg) * (Math.PI / 180)
-    const midCs2BlC2 = (valMidCs) => (valMidCs+1)/2 // Mid CS (x: -1,1, y: -1,1) to Bottom Left CS (x: 0,1, y: 0,1) conversion
-    if (mapSource === 'timeanddate') {
-      // for Equirectangular projection, see https://en.wikipedia.org/wiki/Equirectangular_projection#Forward
-      const standardLat = 0 // this seems to work well enough
-      latAsFrac = (parseFloat(lat)/90)
-      lngAsFrac = (parseFloat(lng) / 180) * Math.cos(deg2rad(standardLat))
-    } else if (mapSource === 'opentopia') {
-      // seems to be mercator? can't get it to work so just make sure if offscreen
-      latAsFrac = -1
-      lngAsFrac = -1
-    } else throw Error(`Sunmap.render(): location projections not implemented for mapSource: ${mapSource}`)
+    let locationPoints = ''
+    if (originLocation && otherLocations && currentlyDisplayedTime) {
+      locationPoints = otherLocations.map(location => {
+        const locationFormatter = new Intl.DateTimeFormat([], { timeZone: location.timezone, timeStyle: 'short' }) // for list of timezones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+        return (
+          
+          <div 
+            class='sunmap-point secondary'
+            style={this.projectLatLng(location.lat, location.lng)}
+          >
+            <div className={`sunmap-point-label ${location.labelLocation}`}>
+              <div>{location.name}</div>
+              <div>{locationFormatter.format(currentlyDisplayedTime)}</div>
+            </div>
+          </div>
+        )
+      })
+      locationPoints.push((
+        <div 
+          class='sunmap-point primary'
+          style={this.projectLatLng(originLocation.lat, originLocation.lng)}
+        />
+      ))
+    }
 
-    console.log(`sunmap: got window dimensions: ${JSON.stringify({ width: window.innerWidth, height: window.innerHeight })}`)
     return (
-      <div>
+      <div class='slide'>
         <DynamicImage 
           src={sunMapUrl}
           maxWidth={window.innerWidth}
           maxHeight={window.innerHeight}
         >
-          <div class='sunmap-point' style={{bottom: `${midCs2BlC2(latAsFrac)*100}%`, left: `${midCs2BlC2(lngAsFrac)*100}%`}}/>
+          { locationPoints }
         </DynamicImage>
         {sunDataContent}
         {timeboxContent}
