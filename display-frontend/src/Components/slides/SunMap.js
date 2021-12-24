@@ -285,12 +285,14 @@ class SunMap extends Slide {
       latAsFrac = -1
       lngAsFrac = -1
     } else throw Error(`Sunmap.render(): location projections not implemented for mapSource: ${mapSource}`)
+
+    console.log(`sunmap: got window dimensions: ${JSON.stringify({ width: window.innerWidth, height: window.innerHeight })}`)
     return (
       <div>
         <DynamicImage 
           src={sunMapUrl}
           maxWidth={window.innerWidth}
-          maxWeight={window.innerHeight}
+          maxHeight={window.innerHeight}
         >
           <div class='sunmap-point' style={{bottom: `${midCs2BlC2(latAsFrac)*100}%`, left: `${midCs2BlC2(lngAsFrac)*100}%`}}/>
         </DynamicImage>
