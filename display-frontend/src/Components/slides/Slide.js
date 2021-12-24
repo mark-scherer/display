@@ -31,6 +31,13 @@ class Slide extends React.Component {
     this.state = {
       serverUrl
     }
+
+    setInterval(() => {
+      const {
+        displayed
+      } = this.props
+      // console.log(`${this.constructor.name}: displayed: ${displayed}`)
+    }, 1000);
   }
 
   /*
@@ -48,6 +55,19 @@ class Slide extends React.Component {
   */
   content() {
     throw Error(`Slide.content() called from ${this.constructor.name}: method must be overriden in child class`)
+  }
+
+  componentDidUpdate(prevProps) {
+    const {
+      displayed: curDisplayed
+    } = this.props
+
+    const {
+      displayed: prevDisplayed
+    } = prevProps
+
+    if (!prevDisplayed && curDisplayed) this.show()
+    if (prevDisplayed && !curDisplayed) this.hide()
   }
 
   /* children SHOULD NOT override Slide.render() */

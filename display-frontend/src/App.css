@@ -208,6 +208,9 @@ html, body, #root, .App {
   transform: translate(-50%, 50%)
 }
 
+.explore-livecam-feed, .explore-livecam-feed * {
+  pointer-events: none;
+}
 .explore-livecam-metadata {
   position: absolute;
   bottom: 20px;

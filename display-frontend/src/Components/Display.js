@@ -35,9 +35,8 @@ class Display extends React.Component {
       this.state = {
         configName,
         serverUrl,
-        // config: {slides: []}, // must initalize to this state
         config: null,
-        currentSlideIndex: 0,
+        currentSlideIndex: -1,
         nextSlideInterval: null,
         fullscreen: false
       }    
@@ -62,12 +61,44 @@ class Display extends React.Component {
     })
   }
 
+  iterateSlide(forward, config) {
+    let {
+      currentSlideIndex
+    } = this.state
+
+    if (!config) config = this.state.config
+
+    if (!config || !config.slides || !config.slides.length) return
+
+    if (forward) {
+      currentSlideIndex += 1
+      if (currentSlideIndex >= config.slides.length) currentSlideIndex = 0
+    } else {
+      currentSlideIndex -= 1
+      if (currentSlideIndex < 0) currentSlideIndex = config.slides.length - 1
+    }
+
+    console.log(`iterating slide: ${JSON.stringify({ forward, currentSlideIndex })}`)
+
+    this.setState({ 
+      currentSlideIndex
+    })
+  }
+
+  handleKeyDown(event) {
+    if (event.keyCode === 39) this.iterateSlide(true) // forward arrow
+    else if (event.keyCode === 37) this.iterateSlide(false) // backward arrow
+    
+    event.stopPropagation()
+  }
+
   async componentDidMount() {
     const {
       configName,
       serverUrl
     } = this.state
 
+    // resolve config
     let config
     try {
       config = await fetch(`${serverUrl}/config/${configName}`).then(data => data.json())
@@ -78,8 +109,8 @@ class Display extends React.Component {
       })
       return
     }
-    // console.log(`got config ${configName}: ${JSON.stringify({ config })}`)
-
+    
+    // validate config
     if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: duration`)
     if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: slides`)
     if (!config.slides.length) throw Error(`config ${configName} has no slides`)
@@ -87,22 +118,15 @@ class Display extends React.Component {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
     })
 
-    const nextSlideInterval = setInterval(() => {
-      let {
-        config,
-        currentSlideIndex
-      } = this.state
+    // create slide interval
+    this.iterateSlide(true, config)
+    const nextSlideInterval = setInterval(this.iterateSlide.bind(this, true), config.duration*1000)
 
-      currentSlideIndex += 1
-      if (currentSlideIndex >= config.slides.length) currentSlideIndex = 0
-
-      this.setState({ currentSlideIndex })
-    }, config.duration*1000)
+    document.addEventListener('keydown', this.handleKeyDown.bind(this))
 
     this.setState({
       config,
-      nextSlideInterval,
-
+      // nextSlideInterval
     })
   }
 
@@ -128,6 +152,7 @@ class Display extends React.Component {
       )
     }
 
+    // create slide elements
     const slideElements = config.slides.map((slideConfig, index) => {
       return React.createElement(SlideComponents[slideConfig.type], {
         ...slideConfig,
@@ -138,7 +163,6 @@ class Display extends React.Component {
     
     return (
       <div class='display'>
-        
         {/* <div class='title'>
           {configName}
         </div> */}

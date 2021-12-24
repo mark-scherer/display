@@ -13,7 +13,7 @@ const MAP_BASE_URL = 'https://www.timeanddate.com/scripts/sunmap.php'
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
 const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
 const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
-const ANIMATION_STEP_MINS = 15 // number of minutes to move up with each animation step
+const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
 const ANIMATION_CYCLE_SECS = 15 // number of secs until animation restarts
 
 class SunMap extends Slide {
@@ -35,9 +35,9 @@ class SunMap extends Slide {
     }
   }
 
-  show() {}
+  // show() {}
 
-  hide() {}
+  // hide() {}
 
   // can pass currentAnimationTime as arg if state not yet set
   triggerAnimation(realTime) {
@@ -121,13 +121,12 @@ class SunMap extends Slide {
   }
 
   async componentDidMount() {
+    this.show()
+    
     const {
       lat,
       lng
     } = this.props
-
-    this.triggerAnimation()
-    const animationRestartInterval = setInterval(this.triggerAnimation.bind(this), ANIMATION_CYCLE_SECS*1000);
 
     const today = new Date()
     const yday = new Date(today)
@@ -136,10 +135,26 @@ class SunMap extends Slide {
     const sunDataYday = await this.getSunData(lat, lng, yday)
 
     this.setState({
-      animationRestartInterval,
       sunDataToday,
       sunDataYday
     })
+  }
+
+  show() {
+    this.triggerAnimation()
+    const animationRestartInterval = setInterval(this.triggerAnimation.bind(this), ANIMATION_CYCLE_SECS*1000)
+    
+    this.setState({
+      animationRestartInterval,
+    })
+  }
+
+  hide() {
+    const {
+      animationRestartInterval
+    } = this.state
+
+    clearInterval(animationRestartInterval)
   }
 
   content() {

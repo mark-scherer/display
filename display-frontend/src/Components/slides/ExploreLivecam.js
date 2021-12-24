@@ -22,10 +22,6 @@ class ExploreLivecam extends Slide {
     }
   }
 
-  show() {}
-
-  hide() {}
-
   async fetchLiveFeeds() {
     const {
       serverUrl
@@ -50,12 +46,12 @@ class ExploreLivecam extends Slide {
     this.setState({
       currentFeed
     })
+
+    return currentFeed
   }
 
-  iterateFact() {
-    const {
-      currentFeed
-    } = this.state
+  iterateFact(currentFeed) {
+    if (!currentFeed) currentFeed = this.state.currentFeed
 
     if (!currentFeed || !currentFeed.facts) return
 
@@ -67,24 +63,63 @@ class ExploreLivecam extends Slide {
     })
   }
 
-  async componentDidMount() {
-    const {
+  createFeedInterval() {
+    let {
       feedDuration,
-      factDuration
+      feedInterval
     } = this.props
 
-    await this.fetchLiveFeeds()
+    if (feedInterval) clearInterval(feedInterval)
 
-    this.iterateFeed()
-    const feedInterval = setInterval(this.iterateFeed.bind(this), feedDuration*1000)
-
-    this.iterateFact()
-    const factInterval = setInterval(this.iterateFact.bind(this), factDuration*1000)
+    const currentFeed = this.iterateFeed()
+    feedInterval = setInterval(this.iterateFeed.bind(this), feedDuration*1000)
 
     this.setState({
-      feedInterval,
+      feedInterval
+    })
+
+    return currentFeed
+  }
+
+  createFactInterval(currentFeed) {
+    let {
+      factDuration,
+      factInterval
+    } = this.props
+
+    if (factInterval) clearInterval(factInterval)
+
+    this.iterateFact(currentFeed)
+    factInterval = setInterval(this.iterateFact.bind(this), factDuration*1000)
+
+    this.setState({
       factInterval
     })
+  }
+
+  async componentDidMount() {
+    await this.fetchLiveFeeds()
+
+    const {
+      displayed
+    } = this.props
+
+    if (displayed) this.show()
+  }
+
+  show() {
+    const currentFeed = this.createFeedInterval()
+    this.createFactInterval(currentFeed)
+  }
+
+  hide() {
+    const {
+      feedInterval,
+      factInterval
+    } = this.state
+
+    clearInterval(feedInterval)
+    clearInterval(factInterval)
   }
 
   content() {
@@ -100,7 +135,7 @@ class ExploreLivecam extends Slide {
     if (currentFeed) {
       const feedUrl = `${currentFeed.feedUrl}&mute=1&enablejsapi=1`
       feedElement = (
-        <div>
+        <div class='explore-livecam-feed'>
           <ReactPlayer 
             url={feedUrl}
             playing={true}

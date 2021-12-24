@@ -484,12 +484,15 @@ class DrivingMap extends Slide {
   }
 
   async componentDidMount() {
+    await this.createMap()
+    this.show()
+    await this.fetchPhotos()
+  }
+
+  show() {
     const {
       spotlightDuration
     } = this.props
-
-    await this.createMap()
-    await this.fetchPhotos()
 
     // let high-level overview without spotlight show initally
     setTimeout(() => {
@@ -501,9 +504,13 @@ class DrivingMap extends Slide {
     }, 5000)
   }
 
-  show() {}
+  hide() {
+    const {
+      spotlightInterval
+    } = this.state
 
-  hide() {}
+    clearInterval(spotlightInterval)
+  }
 
   content() {
     const {
