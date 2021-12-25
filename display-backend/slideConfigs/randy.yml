@@ -3,7 +3,7 @@
 duration: 30
 slides:
   - type: Message
-    msg: Merry Chirstmas Dad!
+    msg: Merry Christmas Dad!
     background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'
     duration: 5
   - type: SunMap
