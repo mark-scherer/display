@@ -28,12 +28,13 @@ router.get('/livefeeds', async (ctx, next) => {
   const feedsInfo = {}
   await Bluebird.map(Object.keys(currentFeeds), async feedSlug => {
     const info = await fetch(`${LIVE_FEED_INFO_ENDPOINT}?id=${currentFeeds[feedSlug]}`).then(response => response.json())
-    if (info.status_code !== 404 && !info.data.is_offline && info.data.current_viewers > 0) {
+    if (info.status_code !== 404 && !info.data.is_offline) {
       feedsInfo[feedSlug] = {
         title: info.data.title,
         location: info.data.location_text,
         feedUrl: info.data.large_feed_html,
-        facts: _.map(info.data.facts, 'fact')
+        facts: _.map(info.data.facts, 'fact'),
+        currentViewers: info.data.current_viewers
       }
     }
   }, {concurrency: FEED_INFO_CONCURRENY})

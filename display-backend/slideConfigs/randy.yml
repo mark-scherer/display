@@ -87,3 +87,4 @@ slides:
     feedDuration: 30
     factDuration: 10
     duration: 60
+    feedRefreshDuration: 7200 # recheck livefeeds every 2 hours

@@ -6,28 +6,42 @@
 import React from 'react';
 import ReactPlayer from "react-player"
 import Slide from './Slide.js';
-import { randomElement } from '../../incl/utils.js'
+import { randomElement, weightedRandomElement } from '../../incl/utils.js'
 
 class ExploreLivecam extends Slide {
   static requiredArgs = [
     'feedDuration',
-    'factDuration'
+    'factDuration',
+    'feedRefreshDuration'
   ]
 
   constructor(props) {
     super(props)
 
     this.state = {
-      feeds: null
+      feeds: null,
+      refreshFeedInterval: null,
+      updateFeedsOnHide: null,
+      currentFeed: null,
+      feedInterval: null,
+      currentFact: null,
+      factInterval: null
     }
   }
 
   async fetchLiveFeeds() {
     const {
-      serverUrl
+      serverUrl,
+      displayed
     } = this.props
+
+    this.setState({
+      feeds: null
+    })
     
     const feeds = await fetch(`${serverUrl}/exploreLivecam/livefeeds`).then(response => response.json())
+
+    if (displayed) this.show()
 
     this.setState({
       feeds
@@ -41,7 +55,7 @@ class ExploreLivecam extends Slide {
 
     if (!feeds) return
 
-    const currentFeed = randomElement(Object.values(feeds))
+    const currentFeed = weightedRandomElement(Object.values(feeds), Object.values(feeds).map(feed => feed.currentViewers))
 
     this.setState({
       currentFeed
@@ -98,13 +112,21 @@ class ExploreLivecam extends Slide {
   }
 
   async componentDidMount() {
-    await this.fetchLiveFeeds()
-
     const {
-      displayed
+      feedRefreshDuration
     } = this.props
 
-    if (displayed) this.show()
+    await this.fetchLiveFeeds()
+
+    const refreshFeedInterval = setInterval(() => {
+      this.setState({
+        updateFeedsOnHide: true
+      })
+    }, feedRefreshDuration*1000);
+
+    this.setState({
+      refreshFeedInterval
+    })
   }
 
   show() {
@@ -115,11 +137,19 @@ class ExploreLivecam extends Slide {
   hide() {
     const {
       feedInterval,
-      factInterval
+      factInterval,
+      updateFeedsOnHide
     } = this.state
 
     clearInterval(feedInterval)
     clearInterval(factInterval)
+
+    if (updateFeedsOnHide) {
+      this.fetchLiveFeeds()
+      this.setState({
+        updateFeedsOnHide: false
+      })
+    }
   }
 
   content() {
