@@ -50,13 +50,12 @@ router.get('/storage/:bucket/:dir', async (ctx, next) => {
   console.log(`got request for storage contents at: ${ctx.params.bucket}/${ctx.params.dir}`)
 
   const signedUrlOptions = {
-    version: 'v4',
+    version: 'v2', // v4 allows at most a 7 day expiration
     action: 'read',
-    expires: Date.now() + 604800 // max allowes expiration is 7 days
+    expires: Date.now() + 365*24*60*60*1000 // valid for 1 year
   }
 
   const [files] = await storage.bucket(ctx.params.bucket).getFiles({prefix: ctx.params.dir})
-  console.log(`got ${files.length} files`)
   let urls = {}
   await Bluebird.map(files, async file => {
     if (file.name[file.name.length - 1] !== '/') urls[file.name] = (await file.getSignedUrl(signedUrlOptions))[0]
