@@ -250,12 +250,19 @@ html, body, #root, .App, .display, .slide-container, .slide {
   bottom: 20px;
   right: 20px;
   background: white;
-  font-size: xx-large;
-  padding: 10px;
+  font-size: large;
+  /* padding: 10px; */
   max-width: 30%
 }
-.explore-livecam-location {
-  font-size: large;
+.explore-livecam-metadata * {
+  padding: 0px 5px;
+}
+.explore-livecam-title {
+  font-size: xx-large;
+}
+.explore-livecam-conditions{
+  display: flex;
+  justify-content: space-evenly;
 }
 .explore-livecam-fact {
   position: absolute;

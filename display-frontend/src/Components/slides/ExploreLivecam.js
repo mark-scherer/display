@@ -6,7 +6,7 @@
 import React from 'react';
 import ReactPlayer from "react-player"
 import Slide from './Slide.js';
-import { randomElement, weightedRandomElement } from '../../incl/utils.js'
+import { randomElement, weightedRandomElement, convertTime } from '../../incl/utils.js'
 
 class ExploreLivecam extends Slide {
   static requiredArgs = [
@@ -40,6 +40,7 @@ class ExploreLivecam extends Slide {
     })
     
     const feeds = await fetch(`${serverUrl}/exploreLivecam/livefeeds`).then(response => response.json())
+    console.log(`fetched livefeeds: ${JSON.stringify({ feeds })}`)
 
     if (displayed) this.show()
 
@@ -180,8 +181,12 @@ class ExploreLivecam extends Slide {
 
       feedMetadataElement = (
         <div class='explore-livecam-metadata'>
-          <div>{currentFeed.title}</div>
+          <div class='explore-livecam-title'>{currentFeed.title}</div>
           <div class='explore-livecam-location'>{currentFeed.location}</div>
+          <div class='explore-livecam-conditions'>
+            <div>{convertTime(new Date(), currentFeed.timezone, { timeStyle: 'short' })}</div>
+            <div>{parseInt(currentFeed.weather.tempF)}{String.fromCharCode(0xb0)}F & {currentFeed.weather.weatherShort}</div>
+          </div>
         </div>
       )
     }

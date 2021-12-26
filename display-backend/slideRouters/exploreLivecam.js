@@ -31,10 +31,21 @@ router.get('/livefeeds', async (ctx, next) => {
     if (info.status_code !== 404 && !info.data.is_offline) {
       feedsInfo[feedSlug] = {
         title: info.data.title,
-        location: info.data.location_text,
         feedUrl: info.data.large_feed_html,
+        currentViewers: info.data.current_viewers,
+        location: info.data.location_text,
+        timezone: info.data.weather.current.timezone,
         facts: _.map(info.data.facts, 'fact'),
-        currentViewers: info.data.current_viewers
+        weather: {
+          isDay: info.data.weather.current.isDay,
+          weatherShort: info.data.weather.current.weatherShort ? info.data.weather.current.weatherShort.toLowerCase() : null,
+          weatherIcon: info.data.weather.current.icon,
+          tempF: info.data.weather.current.tempF,
+          windSpeedMph: info.data.weather.current.windSpeed,
+          windDir: info.data.weather.current.windDir,
+          precipitationFrac: info.data.weather.current.precipitationFloat,
+          humidityFrac:  info.data.weather.current.humidityFloat
+        }
       }
     }
   }, {concurrency: FEED_INFO_CONCURRENY})
