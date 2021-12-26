@@ -8,6 +8,7 @@
 import React from 'react';
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js';
+import { convertTime } from '../../incl/utils.js'
 
 const MAP_SOURCE_GUIDE = {
   'timeanddate': {
@@ -368,7 +369,7 @@ class SunMap extends Slide {
     let locationPoints = ''
     if (originLocation && otherLocations && currentlyDisplayedTime) {
       locationPoints = otherLocations.map(location => {
-        const locationFormatter = new Intl.DateTimeFormat([], { timeZone: location.timezone, timeStyle: 'short' }) // for list of timezones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+        // const locationFormatter = new Intl.DateTimeFormat([], { timeZone: location.timezone, timeStyle: 'short' }) // for list of timezones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
         return (
           
           <div 
@@ -377,7 +378,8 @@ class SunMap extends Slide {
           >
             <div className={`sunmap-point-label ${location.labelLocation}`}>
               <div>{location.name}</div>
-              <div>{locationFormatter.format(currentlyDisplayedTime)}</div>
+              {/* <div>{locationFormatter.format(currentlyDisplayedTime)}</div> */}
+              <div>{convertTime(currentlyDisplayedTime, location.timezone, { timeStyle: 'short' })}</div>
             </div>
           </div>
         )

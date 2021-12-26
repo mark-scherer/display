@@ -34,8 +34,18 @@ const weightedRandomElement = function(list, weights) {
   return list[pickedIndex]
 }
 
+/* 
+  returns datetime converted to timezone formateed with formatOptions
+  - for formatOptions docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
+*/
+const convertTime = function(datetime, timezone, formatOptions) {
+  const locationFormatter = new Intl.DateTimeFormat([], { timeZone: timezone, ...formatOptions })
+  return locationFormatter.format(datetime)
+}
+
 module.exports = {
   randomIndex,
   randomElement,
-  weightedRandomElement
+  weightedRandomElement,
+  convertTime
 }
