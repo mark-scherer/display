@@ -35,7 +35,7 @@ const weightedRandomElement = function(list, weights) {
 }
 
 /* 
-  returns datetime converted to timezone formateed with formatOptions
+  returns datetime converted to timezone formated with formatOptions
   - for formatOptions docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
 */
 const convertTime = function(datetime, timezone, formatOptions) {
@@ -43,9 +43,36 @@ const convertTime = function(datetime, timezone, formatOptions) {
   return locationFormatter.format(datetime)
 }
 
+/*
+  round datetime to specified precison
+*/
+const roundTime = function(datetime, precision) {
+  const result = new Date(datetime)
+
+  if (precision === 'min') {
+    if (result.getSeconds() >= 30) result.setMinutes(result.getMinutes() + 1)
+    result.setSeconds(0)
+  } else throw Error(`roundTime: specified precison not yet supported: ${precision}`)
+
+  return result
+}
+
+/*
+  returns time differences in seconds of datetimeA - datetimeB ignoring date portion, accounting for timezone differences
+*/
+const timeDiffInSecs = function(datetimeA, datetimeB) {
+  // note this Date ctor needs inputs in local time not utc
+  const _timeA = new Date(0, 0, 1, datetimeA.getHours(), datetimeA.getMinutes(), datetimeA.getSeconds())
+  const _timeB = new Date(0, 0, 1, datetimeB.getHours(), datetimeB.getMinutes(), datetimeB.getSeconds())
+  
+  return (_timeA.valueOf() - _timeB.valueOf()) / 1000
+}
+
 module.exports = {
   randomIndex,
   randomElement,
   weightedRandomElement,
-  convertTime
+  convertTime,
+  roundTime,
+  timeDiffInSecs
 }

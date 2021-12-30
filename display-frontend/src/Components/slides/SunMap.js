@@ -4,11 +4,18 @@
   Uses images sniffed from timeanddate.com for map, sunrise-sunset.org for sunrise/sunset
 */
 
+/*
+  need to fix
+    3. setup midnight local timeout to update sunData
+    4. color code city labels based on day, dawn/dusk or night
+*/
+
 
 import React from 'react';
+import { Promise as Bluebird } from 'bluebird'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js';
-import { convertTime } from '../../incl/utils.js'
+import { convertTime, roundTime, timeDiffInSecs } from '../../incl/utils.js'
 
 const MAP_SOURCE_GUIDE = {
   'timeanddate': {
@@ -45,7 +52,8 @@ const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 class SunMap extends Slide {
   static requiredArgs = [
     'mapSource',
-    'originLocation'
+    'originLocation',
+    'dawnDuskDurationMins'
   ]
 
   constructor(props) {
@@ -60,7 +68,8 @@ class SunMap extends Slide {
       mapSource: mapSource, // want this to be state so can dynamically update if needed
       currentlyDisplayedTime: null,
       animationInterval: null,
-      animationRestartInterval: null
+      animationRestartInterval: null,
+      sunDataRefetchTimeout: null // timeout to refetch sundata at midnight local
     }
   }
 
@@ -134,12 +143,19 @@ class SunMap extends Slide {
     return url
   }
 
-  async getSunData(lat, lng, date) {
+  // get sun data for a single day at a single point 
+  async getOneSunData(lat, lng, date) {
     const formatReturnedTime = (returnedTime, date) => {
       const _date = new Date(date)
       const pm = returnedTime.split(' ')[1] === 'PM'
       const [hours, mins, secs] = returnedTime.split(' ')[0].split(':').map(timeComponent => parseInt(timeComponent))
-      const adjustedHours = pm && hours !== 12 ? hours + 12 : hours
+
+      let adjustedHours
+      if (!pm && hours === 12) adjustedHours = 0
+      if (!pm && hours !== 12) adjustedHours = hours
+      if (pm && hours === 12) adjustedHours = 12
+      if (pm && hours !== 12) adjustedHours = hours + 12
+
       _date.setUTCHours(adjustedHours)
       _date.setUTCMinutes(mins)
       _date.setUTCSeconds(secs)
@@ -147,17 +163,43 @@ class SunMap extends Slide {
       return _date
     }
 
-    const formattedDate = `${this.formatTime(date.getFullYear(), 4)}-${this.formatTime(date.getMonth() + 1)}-${this.formatTime(date.getDate())}`
+    const formattedDate = `${this.formatTime(date.getFullYear(), 4)}-${this.formatTime(date.getMonth() + 1)}-${this.formatTime(date.getDate() + 1)}`
     const data = (await fetch(`${SUN_DATA_BASE_URL}?lat=${lat}&lng=${lng}&date=${formattedDate}`).then(response => response.json())).results
 
     const sunrise = formatReturnedTime(data.sunrise, date)
     const sunset = formatReturnedTime(data.sunset, date)
+
     return {
-      sunrise,
-      sunset,
-      solarNoon: formatReturnedTime(data.solar_noon, date),
-      sunDurationSecs: (sunset.valueOf() - sunrise.valueOf())/1000
+      sunrise: roundTime(sunrise, 'min'),
+      sunset: roundTime(sunset, 'min'),
+      solarNoon: roundTime(formatReturnedTime(data.solar_noon, date), 'min'),
+      sunDurationSecs: (sunset.valueOf() - sunrise.valueOf()) / 1000
     }
+  }
+
+  async getAllSunData() {
+    const {
+      originLocation,
+      otherLocations
+    } = this.props
+
+    const today = new Date()
+    const yday = new Date(today)
+    yday.setDate(today.getDate() - 1)
+
+    let sunData = {
+      originLocation: {
+        today: await this.getOneSunData(originLocation.lat, originLocation.lng, today),
+        yday: await this.getOneSunData(originLocation.lat, originLocation.lng, yday)
+      }
+    }
+    await Bluebird.map(otherLocations, async locationInfo => {
+      sunData[locationInfo.name] = await this.getOneSunData(locationInfo.lat, locationInfo.lng, today)
+    })
+
+    this.setState({
+      sunData
+    })
   }
 
   /*
@@ -213,28 +255,50 @@ class SunMap extends Slide {
     const latAsFrac = (nominalLatAsFrac - projectedSouthTruncationLat) / (projectedNorthTruncationLat - projectedSouthTruncationLat)
     const lngAsFrac =  (nominalLngAsFrac - projectedEastTruncationLng) / (projectedWestTruncationLng - projectedEastTruncationLng)
 
-    console.log(`Sumnap.projectLatLng(): ${JSON.stringify({
-      projection,
-      lat,
-      lng,
-      nominalLatAsFrac,
-      nominalLngAsFrac,
-      latAsFrac,
-      lngAsFrac,
-      eastTruncationLng,
-      westTruncationLng,
-      northTruncationLat,
-      southTruncationLat,
-      projectedEastTruncationLng,
-      projectedWestTruncationLng,
-      projectedNorthTruncationLat,
-      projectedSouthTruncationLat
-    })}`)
+    // console.log(`Sumnap.projectLatLng(): ${JSON.stringify({
+    //   projection,
+    //   lat,
+    //   lng,
+    //   nominalLatAsFrac,
+    //   nominalLngAsFrac,
+    //   latAsFrac,
+    //   lngAsFrac,
+    //   eastTruncationLng,
+    //   westTruncationLng,
+    //   northTruncationLat,
+    //   southTruncationLat,
+    //   projectedEastTruncationLng,
+    //   projectedWestTruncationLng,
+    //   projectedNorthTruncationLat,
+    //   projectedSouthTruncationLat
+    // })}`)
 
     return {
       bottom: `${latAsFrac*100}%`,
       left: `${lngAsFrac*100}%`
     }
+  }
+
+  // fetch current sundata and setup refetch at next midnight
+  fetchAndRefetchSunData() {
+    this.getAllSunData()
+
+    const current = new Date(), nextFetch = new Date()
+    nextFetch.setDate(current.getDate() + 1)
+    nextFetch.setHours(0)
+    nextFetch.setMinutes(0)
+    nextFetch.setSeconds(0)
+
+    const sunDataRefetchTimeout = setTimeout(this.fetchAndRefetchSunData.bind(this), nextFetch.valueOf() - current.valueOf())
+
+    console.log(`set timeout to refetch sundata ${JSON.stringify({
+      nextFetch: nextFetch.toLocaleString(),
+      timeoutHours: (nextFetch.valueOf() - current.valueOf())/1000/60/60
+    })}`)
+
+    this.setState({
+      sunDataRefetchTimeout
+    })
   }
 
   async componentDidMount() {
@@ -243,20 +307,7 @@ class SunMap extends Slide {
     } = this.props
     if (displayed) this.show()
     
-    const {
-      originLocation
-    } = this.props
-
-    const today = new Date()
-    const yday = new Date(today)
-    yday.setDate(today.getDate() - 1)
-    const sunDataToday = await this.getSunData(originLocation.lat, originLocation.lng, today)
-    const sunDataYday = await this.getSunData(originLocation.lat, originLocation.lng, yday)
-
-    this.setState({
-      sunDataToday,
-      sunDataYday
-    })
+    this.fetchAndRefetchSunData()
   }
 
   show() {
@@ -291,15 +342,15 @@ class SunMap extends Slide {
   content() {
     const {
       originLocation,
-      otherLocations
+      otherLocations,
+      dawnDuskDurationMins
     } = this.props
 
     const {
       mapSource,
       currentlyDisplayedTime,
       realTime,
-      sunDataToday,
-      sunDataYday
+      sunData
     } = this.state
 
     let sunMapUrl,  timeboxContent = ''
@@ -326,17 +377,20 @@ class SunMap extends Slide {
     }
 
     let sunDataContent = ''
-    if (sunDataToday && sunDataYday) {
+    if (sunData) {
       const today = new Date()
       const formattedDate = `${new Intl.DateTimeFormat('en-US', {month: 'short'}).format(today)} ${today.getDate()}`
 
-      const sunDurationHoursToday = sunDataToday.sunDurationSecs / 60 / 60
-      const sunDurationHoursYday = sunDataYday.sunDurationSecs / 60 / 60
+      const sunDurationHoursToday = sunData.originLocation.today.sunDurationSecs / 60 / 60
+      const sunDurationHoursYday = sunData.originLocation.yday.sunDurationSecs / 60 / 60
       const sunDurationDifferenceHours = sunDurationHoursToday - sunDurationHoursYday
       const moreSun = sunDurationDifferenceHours > 0
 
       const formatSunDuration = (sunDurationHours) => {
-        return `${Math.floor(sunDurationHours)}:${this.formatTime(parseInt((sunDurationHours*60) % 60))}`
+        const hours = Math.floor(sunDurationHours)
+        const mins = Math.round(sunDurationHours*60) % 60
+
+        return `${hours}:${this.formatTime(mins)}`
       }
 
       sunDataContent = (
@@ -346,15 +400,15 @@ class SunMap extends Slide {
             <tbody>
               <tr>
                 <td class='label'>sunrise:</td>
-                <td>{sunDataToday.sunrise.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{sunData.originLocation.today.sunrise.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>solar noon:</td>
-                <td>{sunDataToday.solarNoon.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{sunData.originLocation.today.solarNoon.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>sunset:</td>
-                <td>{sunDataToday.sunset.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{sunData.originLocation.today.sunset.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>day length:</td>
@@ -367,26 +421,45 @@ class SunMap extends Slide {
     }
 
     let locationPoints = ''
-    if (originLocation && otherLocations && currentlyDisplayedTime) {
+    if (originLocation && otherLocations && currentlyDisplayedTime && sunData) {
+      const getLabelTimeClass = (currentlyDisplayedTime, sunrise, sunset, timezone) => {
+        const localDisplayedTime = new Date(currentlyDisplayedTime.toLocaleString('en-US', { timeZone: timezone }))
+        const localSunrise = new Date(sunrise.toLocaleString('en-US', { timeZone: timezone }))
+        const localSunset = new Date(sunset.toLocaleString('en-US', { timeZone: timezone }))
+
+        let labelTimeClass
+        if (Math.abs(timeDiffInSecs(localDisplayedTime, localSunrise)) < (dawnDuskDurationMins * 60)/2) {
+          labelTimeClass = 'dawn'
+        } else if (Math.abs(timeDiffInSecs(localDisplayedTime, localSunset)) < (dawnDuskDurationMins * 60)/2) {
+          labelTimeClass = 'dusk'
+        } else if (timeDiffInSecs(localDisplayedTime, localSunrise) > 0 && timeDiffInSecs(localDisplayedTime, localSunset) < 0) {
+          labelTimeClass = 'day'
+        } else {
+          labelTimeClass = 'night'
+        }
+
+        return labelTimeClass
+      }
+
       locationPoints = otherLocations.map(location => {
-        // const locationFormatter = new Intl.DateTimeFormat([], { timeZone: location.timezone, timeStyle: 'short' }) // for list of timezones: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+        const locationTimeLabelClass = getLabelTimeClass(currentlyDisplayedTime, sunData[location.name].sunrise, sunData[location.name].sunset, location.timezone)
         return (
-          
           <div 
-            class='sunmap-point secondary'
+            className={`sunmap-point secondary ${locationTimeLabelClass}`}
             style={this.projectLatLng(location.lat, location.lng)}
           >
             <div className={`sunmap-point-label ${location.labelLocation}`}>
               <div>{location.name}</div>
-              {/* <div>{locationFormatter.format(currentlyDisplayedTime)}</div> */}
               <div>{convertTime(currentlyDisplayedTime, location.timezone, { timeStyle: 'short' })}</div>
             </div>
           </div>
         )
       })
+  
+      const originTimeLabelClass = getLabelTimeClass(currentlyDisplayedTime, sunData.originLocation.today.sunrise, sunData.originLocation.today.sunset, originLocation.timezone)
       locationPoints.push((
         <div 
-          class='sunmap-point primary'
+          className={`sunmap-point primary ${originTimeLabelClass}`}
           style={this.projectLatLng(originLocation.lat, originLocation.lng)}
         />
       ))

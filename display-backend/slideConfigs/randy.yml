@@ -9,8 +9,9 @@ slides:
   - type: SunMap
     duration: 15
     mapSource: opentopia
-    # mapSource: timeanddate
+    dawnDuskDurationMins: 60
     originLocation:
+      timezone: America/Kentucky/Louisville
       lat: 38.44
       lng: -85.61
     otherLocations:
