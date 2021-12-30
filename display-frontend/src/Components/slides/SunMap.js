@@ -4,12 +4,6 @@
   Uses images sniffed from timeanddate.com for map, sunrise-sunset.org for sunrise/sunset
 */
 
-/*
-  need to fix
-    3. setup midnight local timeout to update sunData
-    4. color code city labels based on day, dawn/dusk or night
-*/
-
 
 import React from 'react';
 import { Promise as Bluebird } from 'bluebird'
