@@ -68,7 +68,7 @@ const timeDiffInSecs = function(datetimeA, datetimeB) {
   return (_timeA.valueOf() - _timeB.valueOf()) / 1000
 }
 
-module.exports = {
+export {
   randomIndex,
   randomElement,
   weightedRandomElement,
