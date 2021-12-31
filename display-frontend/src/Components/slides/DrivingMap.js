@@ -3,13 +3,12 @@
 */
 
 import React from 'react';
-import { Loader } from "@googlemaps/js-api-loader"
 import { Promise as Bluebird } from 'bluebird'
-import { randomElement } from '../../incl/utils.js'
+import { randomElement, loadGoogleMapsLib } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js'
-import 'react-responsive-carousel/lib/styles/carousel.min.css'
-import { Carousel } from 'react-responsive-carousel'
+// import 'react-responsive-carousel/lib/styles/carousel.min.css'
+// import { Carousel } from 'react-responsive-carousel'
 
 // see https://developers.google.com/maps/documentation/javascript/style-reference
 const mapStyles = [
@@ -45,10 +44,6 @@ class DrivingMap extends Slide {
   constructor(props) {
     super(props)
 
-    // const loader = new Loader({
-    //   apiKey: MAPS_API_KEY,
-    // })
-
     this.state = {
       // include state partially set in base Slide ctor
       ...this.state,
@@ -58,7 +53,6 @@ class DrivingMap extends Slide {
 
       // temporarily null rendering objects
       google: null,
-      loader: null,
       map: null,
       directions: null, // type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
       markers: null,    // markers[directionsIndex] = type google.maps.Marker <- directionsIndex = stopIndex + 1
@@ -244,14 +238,8 @@ class DrivingMap extends Slide {
       stops
     } = this.props
 
-    const {
-      key: mapsApiKey
-    } = await fetch(`${serverUrl}/apiKey/mapsApi`).then(response => response.json())
-  
-    const loader = new Loader({ apiKey: mapsApiKey})
-
     try {
-      const google = await loader.load()
+      const google = await loadGoogleMapsLib(serverUrl)
       const directionsService = new google.maps.DirectionsService()
       const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
@@ -289,7 +277,6 @@ class DrivingMap extends Slide {
 
       this.setState({
         google,
-        loader,
         map,
         directions: directionsResult,
         directionsCenter,

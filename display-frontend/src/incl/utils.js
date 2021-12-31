@@ -1,3 +1,5 @@
+import { Loader } from "@googlemaps/js-api-loader"
+
 const randomIndex = function(list) {
   return Math.floor(Math.random() * list.length)
 }
@@ -68,11 +70,29 @@ const timeDiffInSecs = function(datetimeA, datetimeB) {
   return (_timeA.valueOf() - _timeB.valueOf()) / 1000
 }
 
+const loadGoogleMapsLib = async function(serverUrl) {
+
+  let google
+  try {
+    const {
+      key: mapsApiKey
+    } = await fetch(`${serverUrl}/apiKey/mapsApi`).then(response => response.json())
+
+    const loader = new Loader({ apiKey: mapsApiKey})
+    google = await loader.load()
+  } catch (error) {
+    throw Error(`error loading google maps lib: ${JSON.stringify({ error: String(error), serverUrl })}`)
+  }
+
+  return google
+}
+
 export {
   randomIndex,
   randomElement,
   weightedRandomElement,
   convertTime,
   roundTime,
-  timeDiffInSecs
+  timeDiffInSecs,
+  loadGoogleMapsLib
 }
