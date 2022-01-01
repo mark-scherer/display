@@ -42,7 +42,7 @@
 /* custom styling */
 
 /* allow 100% height styling */
-html, body, #root, .App, .display, .slide-container, .slide {
+html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-content, .slide {
   height: 100%;
 }
 
@@ -68,22 +68,27 @@ html, body, #root, .App, .display, .slide-container, .slide {
   text-align: left;
 }
 
-.slide-container {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
 .fullscreen {
   position: absolute;
   right: 10px;
   top: 10px;
 }
 
-/* target all slides like this avoid enforcing a class added to each slide component */
+.slide-carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+.slide-carousel-content {
+  transition: margin 0.5s ease;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
 .slide {
   flex-grow: 1;
+  flex-shrink: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;

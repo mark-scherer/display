@@ -41,7 +41,9 @@ class Display extends React.Component {
         currentSlideIndex: -1,
         currentSlideDuration: null,
         nextSlideInterval: null,
-        fullscreen: false
+        fullscreen: false,
+        slideWidth: window.innerWidth,
+        slideHeight: window.innerHeight
       }    
   }
 
@@ -109,6 +111,13 @@ class Display extends React.Component {
     event.stopPropagation()
   }
 
+  handleResize() {
+    this.setState({
+      slideWidth: window.innerWidth,
+      slideHeight: window.innerHeight
+    })
+  }
+
   async componentDidMount() {
     const {
       configName,
@@ -138,10 +147,10 @@ class Display extends React.Component {
     this.iterateSlide(true, true, config)
 
     document.addEventListener('keydown', this.handleKeyDown.bind(this))
+    window.addEventListener('resize', this.handleResize.bind(this))
 
     this.setState({
-      config,
-      // nextSlideInterval
+      config
     })
   }
 
@@ -151,6 +160,8 @@ class Display extends React.Component {
       config,
       currentSlideIndex,
       fullscreen,
+      slideWidth,
+      slideHeight,
       serverUrl
     } = this.state
 
@@ -172,24 +183,27 @@ class Display extends React.Component {
       return React.createElement(SlideComponents[slideConfig.type], {
         ...slideConfig,
         serverUrl,
-        displayed: currentSlideIndex === index
+        displayed: currentSlideIndex === index,
+        slideWidth,
+        slideHeight
       })
     })
     
     return (
       <div class='display'>
-        {/* <div class='title'>
-          {configName}
-        </div> */}
-
-        <div class='slide-container'>
-          {slideElements}
+        <div class='slide-carousel-container'>
+          <div 
+            class='slide-carousel-content'
+            style={{ marginLeft: `-${currentSlideIndex*slideWidth}px` }}
+          >
+            {slideElements}
+          </div>
+        </div>
           <img 
             class='fullscreen' 
             onClick={() => this.toggleFullscreen()}
             src={fullscreen ? 'https://img.icons8.com/windows/32/000000/compress.png' : 'https://img.icons8.com/windows/32/000000/fit-to-width--v1.png'}
           />
-        </div>
       </div>
     )
   }

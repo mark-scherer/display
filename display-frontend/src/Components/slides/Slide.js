@@ -76,17 +76,8 @@ class Slide extends React.Component {
       displayed
     } = this.props
 
-    const slideContent = this.content()
-
-    if (!displayed) return null
-
-    // return (
-    //   <div class='slide'>
-    //     {slideContent}
-    //   </div>
-    // )
-
-    return slideContent
+    // nesting child content within another method provides more rendering flexibility here in base
+    return this.content()
   }
 }
 
