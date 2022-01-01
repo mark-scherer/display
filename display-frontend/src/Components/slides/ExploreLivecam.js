@@ -31,8 +31,7 @@ class ExploreLivecam extends Slide {
 
   async fetchLiveFeeds() {
     const {
-      serverUrl,
-      displayed
+      serverUrl
     } = this.props
 
     this.setState({
@@ -42,17 +41,19 @@ class ExploreLivecam extends Slide {
     const feeds = await fetch(`${serverUrl}/exploreLivecam/livefeeds`).then(response => response.json())
     console.log(`fetched livefeeds: ${JSON.stringify({ feeds })}`)
 
-    if (displayed) this.show()
+    const {
+      displayed   // recalcuate if displayed after fetch
+    } = this.props
+
+    if (displayed) this.show(feeds)
 
     this.setState({
       feeds
     })
   }
 
-  iterateFeed() {
-    const {
-      feeds
-    } = this.state
+  iterateFeed(feeds) {
+    if (!feeds) feeds = this.state.feeds
 
     if (!feeds) return
 
@@ -78,7 +79,7 @@ class ExploreLivecam extends Slide {
     })
   }
 
-  createFeedInterval() {
+  createFeedInterval(feeds) {
     let {
       feedDuration,
       feedInterval
@@ -86,11 +87,12 @@ class ExploreLivecam extends Slide {
 
     if (feedInterval) clearInterval(feedInterval)
 
-    const currentFeed = this.iterateFeed()
+    const currentFeed = this.iterateFeed(feeds)
     feedInterval = setInterval(this.iterateFeed.bind(this), feedDuration*1000)
 
     this.setState({
-      feedInterval
+      feedInterval,
+      currentFeed
     })
 
     return currentFeed
@@ -117,6 +119,8 @@ class ExploreLivecam extends Slide {
       feedRefreshDuration
     } = this.props
 
+    // this.createMap()
+
     await this.fetchLiveFeeds()
 
     const refreshFeedInterval = setInterval(() => {
@@ -130,8 +134,8 @@ class ExploreLivecam extends Slide {
     })
   }
 
-  show() {
-    const currentFeed = this.createFeedInterval()
+  show(feeds) {
+    const currentFeed = this.createFeedInterval(feeds)
     this.createFactInterval(currentFeed)
   }
 
