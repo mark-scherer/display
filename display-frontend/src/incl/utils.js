@@ -1,5 +1,11 @@
 import { Loader } from "@googlemaps/js-api-loader"
 
+// cause I hate JS for loops
+  // start inclusive, end exclusive
+const range = function(start, end) {
+  return Array(end - start).map((element, index) => start + index)
+}
+
 const randomIndex = function(list) {
   return Math.floor(Math.random() * list.length)
 }
@@ -9,7 +15,6 @@ const randomElement = function(list) {
 }
 
 // weights do not need to add to 1
-// NEED TO TEST!
 const weightedRandomElement = function(list, weights) {
   if (list.length !== weights.length) throw Error(`weightedRandomElement: list and weights must be same length: ${JSON.stringify({ listLength: list.length, weightsLength: weights.length })}`)
   if (list.length === 0) return null
@@ -88,6 +93,7 @@ const loadGoogleMapsLib = async function(serverUrl) {
 }
 
 export {
+  range,
   randomIndex,
   randomElement,
   weightedRandomElement,
