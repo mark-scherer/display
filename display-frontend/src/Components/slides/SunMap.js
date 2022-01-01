@@ -335,6 +335,8 @@ class SunMap extends Slide {
 
   content() {
     const {
+      slideWidth,
+      slideHeight,
       originLocation,
       otherLocations,
       dawnDuskDurationMins
@@ -463,8 +465,8 @@ class SunMap extends Slide {
       <div class='slide'>
         <DynamicImage 
           src={sunMapUrl}
-          maxWidth={window.innerWidth}
-          maxHeight={window.innerHeight}
+          maxWidth={slideWidth}
+          maxHeight={slideHeight}
         >
           { locationPoints }
         </DynamicImage>

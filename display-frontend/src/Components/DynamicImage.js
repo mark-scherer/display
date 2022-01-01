@@ -14,15 +14,25 @@ class DynamicImage extends React.Component {
 
   handleOnLoad(event) {
     const {
-      src,
-      maxWidth,
-      maxHeight
-    } = this.props
-
-    const {
       naturalHeight,
       naturalWidth
     } = event.target
+
+    this.calcRenderDimensions(naturalWidth, naturalHeight)
+
+    this.setState({
+      naturalWidth,
+      naturalHeight
+    })
+      
+    // console.log(`DynamicImage.handleOnLoad! ${JSON.stringify({ src, maxWidth, maxHeight, naturalWidth, naturalHeight, imgWidthOverHeight, tooTall, renderWidth, renderHeight })}`)
+  }
+
+  calcRenderDimensions(naturalWidth, naturalHeight) {
+    const {
+      maxWidth,
+      maxHeight
+    } = this.props
 
     const imgWidthOverHeight =  naturalWidth / naturalHeight
     const tooTall = imgWidthOverHeight < (maxWidth / maxHeight)
@@ -31,13 +41,28 @@ class DynamicImage extends React.Component {
     const renderHeight = tooTall ? maxHeight : maxWidth / imgWidthOverHeight
 
     this.setState({
-      naturalWidth,
-      naturalHeight,
       renderWidth,
       renderHeight
     })
-      
-    // console.log(`DynamicImage.handleOnLoad! ${JSON.stringify({ src, maxWidth, maxHeight, naturalWidth, naturalHeight, imgWidthOverHeight, tooTall, renderWidth, renderHeight })}`)
+  }
+
+  componentDidUpdate(prevProps) {
+    const {
+      maxWidth: currMaxWidth,
+      maxHeight: currMaxHeight
+    } = this.props
+
+    const {
+      maxWidth: prevMaxWidth,
+      maxHeight: prevMaxHeight
+    } = prevProps
+
+    const {
+      naturalWidth,
+      naturalHeight
+    } = this.state
+
+    if (naturalWidth && naturalHeight && (currMaxWidth !== prevMaxWidth || currMaxHeight !== prevMaxHeight)) this.calcRenderDimensions(naturalWidth, naturalHeight)
   }
 
   render() {
@@ -54,7 +79,7 @@ class DynamicImage extends React.Component {
     } = this.props
 
     let width, height
-    if (renderWidth && renderWidth) {
+    if (renderWidth && renderHeight) {
       width = renderWidth
       height = renderHeight
     }
