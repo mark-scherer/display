@@ -1,4 +1,5 @@
 import { Loader } from "@googlemaps/js-api-loader"
+import * as chroma from "chroma-js"
 
 // cause I hate JS for loops
   // start inclusive, end exclusive
@@ -75,6 +76,11 @@ const timeDiffInSecs = function(datetimeA, datetimeB) {
   return (_timeA.valueOf() - _timeB.valueOf()) / 1000
 }
 
+const colorScale = function(colors, frac) {
+  const scale = chroma.scale(colors)
+  return scale(frac).hex()
+}
+
 const loadGoogleMapsLib = async function(serverUrl, version='weekly') {
 
   let google
@@ -100,8 +106,12 @@ export {
   randomIndex,
   randomElement,
   weightedRandomElement,
+
   convertTime,
   roundTime,
   timeDiffInSecs,
+
+  colorScale,
+
   loadGoogleMapsLib
 }

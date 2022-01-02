@@ -9,8 +9,11 @@ import React from 'react';
 import { Promise as Bluebird } from 'bluebird'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js';
-import { convertTime, roundTime, timeDiffInSecs } from '../../incl/utils.js'
+import { convertTime, roundTime, timeDiffInSecs, colorScale } from '../../incl/utils.js'
 
+/*
+  map source params
+*/
 const MAP_SOURCE_GUIDE = {
   'timeanddate': {
     baseUrl: 'https://www.timeanddate.com/scripts/sunmap.php', // prospect IP got banned 12/24/21, contacted webmaster
@@ -37,17 +40,29 @@ const MAP_SOURCE_GUIDE = {
 
 const SUN_DATA_BASE_URL = 'https://api.sunrise-sunset.org/json'
 
-// animation params, when MAP_SOURCE_GUIDE[mapSource].animate === true
+/*
+  animation params
+  - only applicable when MAP_SOURCE_GUIDE[mapSource].animate === true
+*/
 const ANIMATION_LENGTH_HOURS = 3 // number of hours of sun history to show
 const ANIMATION_DURATION_SECS = 5 // number of seconds for animation to real time to last
 const ANIMATION_STEP_MINS = 5 // number of minutes to move up with each animation step
 const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 
+/*
+  label coloring params
+    - color codes by temperature
+*/
+const MIN_TEMP = 0
+const MAX_TEMP = 100
+const TEMP_COLORS = ['magenta', 'blue', 'goldenrod', 'red']
+
 class SunMap extends Slide {
   static requiredArgs = [
     'mapSource',
     'originLocation',
-    'dawnDuskDurationMins'
+    'dawnDuskDurationMins',
+    'weatherDuration'       // seconds between weather data refreshs
   ]
 
   constructor(props) {
@@ -63,7 +78,10 @@ class SunMap extends Slide {
       currentlyDisplayedTime: null,
       animationInterval: null,
       animationRestartInterval: null,
-      sunDataRefetchTimeout: null // timeout to refetch sundata at midnight local
+      sunDataRefetchTimeout: null, // timeout to refetch sundata at midnight local
+      detailMode: 'temp', // what data to show under otherLocation markers
+      weatherData: null,
+      weatherInterval: null,
     }
   }
 
@@ -196,6 +214,33 @@ class SunMap extends Slide {
     })
   }
 
+  async getWeatherData() {
+    const {
+      otherLocations,
+      serverUrl
+    } = this.props
+
+    const locations = otherLocations
+    const rawWeatherData = await fetch(`${serverUrl}/weather/current`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ locations })
+    }).then(response => response.json())
+    
+    const weatherData = {}
+    Object.keys(rawWeatherData).map(locationIndex => {
+      weatherData[locations[parseInt(locationIndex)].name] = rawWeatherData[locationIndex]
+    })
+
+    this.setState({
+      weatherData
+    })
+    
+    // console.log(`got weatherData: ${JSON.stringify({ weatherData })}`)
+  }
+
   /*
     projects lat/lng into usable css bottom/left properties
     lat/lng
@@ -297,11 +342,19 @@ class SunMap extends Slide {
 
   async componentDidMount() {
     const {
+      weatherDuration,
       displayed
     } = this.props
     if (displayed) this.show()
     
     this.fetchAndRefetchSunData()
+
+    this.getWeatherData()
+    const weatherInterval = setInterval(this.getWeatherData.bind(this), weatherDuration*1000)
+
+    this.setState({
+      weatherInterval
+    })
   }
 
   show() {
@@ -343,10 +396,11 @@ class SunMap extends Slide {
     } = this.props
 
     const {
-      mapSource,
       currentlyDisplayedTime,
       realTime,
-      sunData
+      sunData,
+      detailMode,
+      weatherData
     } = this.state
 
     let sunMapUrl,  timeboxContent = ''
@@ -439,6 +493,18 @@ class SunMap extends Slide {
 
       locationPoints = otherLocations.map(location => {
         const locationTimeLabelClass = getLabelTimeClass(currentlyDisplayedTime, sunData[location.name].sunrise, sunData[location.name].sunset, location.timezone)
+        
+        let detailElement = ''
+        if (detailMode === 'temp' && weatherData && weatherData[location.name]) {
+          const temp = weatherData[location.name].temp
+          detailElement = (
+            <div 
+              class='sunmap-point-detail'
+              style={{ color : colorScale(TEMP_COLORS, (temp - MIN_TEMP)/(MAX_TEMP - MIN_TEMP))}}
+            >{Math.round(temp)}{String.fromCharCode(0xb0)}F</div>
+          )
+        }
+
         return (
           <div 
             className={`sunmap-point secondary ${locationTimeLabelClass}`}
@@ -447,6 +513,7 @@ class SunMap extends Slide {
             <div className={`sunmap-point-label ${location.labelLocation}`}>
               <div>{location.name}</div>
               <div>{convertTime(currentlyDisplayedTime, location.timezone, { timeStyle: 'short' })}</div>
+              {detailElement}
             </div>
           </div>
         )

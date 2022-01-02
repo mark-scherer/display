@@ -10,6 +10,7 @@ slides:
     duration: 15
     mapSource: opentopia
     dawnDuskDurationMins: 60
+    weatherDuration: 3600
     originLocation:
       timezone: America/Kentucky/Louisville
       lat: 38.44
