@@ -6,12 +6,57 @@
 import React from 'react';
 import ReactPlayer from "react-player"
 import Slide from './Slide.js';
-import { randomElement, weightedRandomElement, convertTime } from '../../incl/utils.js'
+import { randomElement, weightedRandomElement, convertTime, loadGoogleMapsLib } from '../../incl/utils.js'
+
+const MAP_ELEMENT_ID = 'explore-livecam-map'
+const MAP_ANIMATION_FREQ = 20 // in Hz
+const MAP_ANIMATION_PAUSE = 3 // in seconds, before and after zoom animation
+
+const MAP_STYLES = [
+  {
+    featureType: 'administrative.province',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'administrative.neighborhood',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'landscape.man_made',
+    elementType: 'all',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  },
+  {
+    featureType: 'poi',
+    elementType: 'all',
+    stylers: [
+      { 'visibility': 'off'}
+    ]
+  }
+]
 
 class ExploreLivecam extends Slide {
   static requiredArgs = [
     'feedDuration',
-    'factDuration',
+    'detailDuration',
+    'startInFactMode',    // start with detail as fact? otherwise starts with map
+    'mapMaxZoom',         // min & max zoom are inclusive
+    'mapMinZoom',
     'feedRefreshDuration'
   ]
 
@@ -24,8 +69,13 @@ class ExploreLivecam extends Slide {
       updateFeedsOnHide: null,
       currentFeed: null,
       feedInterval: null,
+      detailFactMode: false, // true if detail should current show fact, otherwise shows map
       currentFact: null,
-      factInterval: null
+      detailInterval: null,
+      google: null,
+      map: null,
+      mapStyles: MAP_STYLES,
+      marker: null
     }
   }
 
@@ -39,11 +89,12 @@ class ExploreLivecam extends Slide {
     })
     
     const feeds = await fetch(`${serverUrl}/exploreLivecam/livefeeds`).then(response => response.json())
-    console.log(`fetched livefeeds: ${JSON.stringify({ feeds })}`)
 
     const {
       displayed   // recalcuate if displayed after fetch
     } = this.props
+
+    console.log(`ExploreLivecam.fetchLiveFeeds: fetched ${Object.keys(feeds).length} feeds: ${JSON.stringify({ displayed, feeds })}`)
 
     if (displayed) this.show(feeds)
 
@@ -53,11 +104,19 @@ class ExploreLivecam extends Slide {
   }
 
   iterateFeed(feeds) {
+    const {
+      google,
+      map
+    } = this.state
+
     if (!feeds) feeds = this.state.feeds
 
     if (!feeds) return
 
     const currentFeed = weightedRandomElement(Object.values(feeds), Object.values(feeds).map(feed => feed.currentViewers))
+    
+    if (map && google) this.updateMap(currentFeed.location.lat, currentFeed.location.lng)
+    this.createDetailInterval(currentFeed)
 
     this.setState({
       currentFeed
@@ -66,24 +125,80 @@ class ExploreLivecam extends Slide {
     return currentFeed
   }
 
-  iterateFact(currentFeed) {
+  iterateDetail(currentFeed, prevDetailFactMode) {
+    const {
+      mapAnimationInterval
+    } = this.state
+
     if (!currentFeed) currentFeed = this.state.currentFeed
+    if (!prevDetailFactMode) prevDetailFactMode = this.state.detailFactMode
 
-    if (!currentFeed || !currentFeed.facts) return
+    // special case: no feed yet loaded
+    if (!currentFeed) return
 
-    let currentFact = randomElement(currentFeed.facts)
-    if (currentFact) currentFact = currentFact.split('. ')[0]
+    // special case: feed has no facts
+    let detailFactMode, currentFact
+    if (!currentFeed.facts || !currentFeed.facts.length) {
+      this.setState({
+        detailFactMode: false
+      })
+    } else {
+      detailFactMode = !prevDetailFactMode
+
+      // next will display fact
+      if (detailFactMode) {
+        currentFact = randomElement(currentFeed.facts)
+        currentFact = currentFact.split('. ')[0]
+      }
+    }
+
+    clearInterval(mapAnimationInterval)
+    if (!detailFactMode) this.createMapAnimationInterval()
 
     this.setState({
+      detailFactMode,
       currentFact
     })
   }
 
-  createFeedInterval(feeds) {
-    let {
-      feedDuration,
-      feedInterval
+  // zooms out slowly over duration map is shown
+  iterateMapAnimation() {
+    const {
+      detailDuration,
+      mapMinZoom,
+      mapMaxZoom
     } = this.props
+    
+    const {
+      map,
+      mapAnimationInterval
+    } = this.state
+
+    const steps = (detailDuration - (2*MAP_ANIMATION_PAUSE))*MAP_ANIMATION_FREQ 
+    const stepValue = (mapMaxZoom - mapMinZoom)/steps
+    
+    let zoom = map.getZoom()
+    zoom -= stepValue
+    map.setZoom(zoom)
+
+    if (zoom <= mapMinZoom) {
+      clearInterval(mapAnimationInterval)
+      this.setState({
+        mapAnimationInterval: null
+      })
+    }
+
+    // console.log(`updated map zoom: ${JSON.stringify({zoom, mapMinZoom, mapMaxZoom })}`)
+  }
+
+  createFeedInterval(feeds) {
+    const {
+      feedDuration
+    } = this.props
+
+    let {
+      feedInterval
+    } = this.state
 
     if (feedInterval) clearInterval(feedInterval)
 
@@ -98,19 +213,99 @@ class ExploreLivecam extends Slide {
     return currentFeed
   }
 
-  createFactInterval(currentFeed) {
-    let {
-      factDuration,
-      factInterval
+  createDetailInterval(currentFeed) {
+    const {
+      detailDuration,
+      startInFactMode,
     } = this.props
 
-    if (factInterval) clearInterval(factInterval)
+    let {
+      detailInterval
+    } = this.state
 
-    this.iterateFact(currentFeed)
-    factInterval = setInterval(this.iterateFact.bind(this), factDuration*1000)
+    if (detailInterval) clearInterval(detailInterval)
+    this.iterateDetail(currentFeed, !startInFactMode)
+    detailInterval = setInterval(this.iterateDetail.bind(this), detailDuration*1000)
 
     this.setState({
-      factInterval
+      detailInterval
+    })
+  }
+
+  createMapAnimationInterval() {
+    const {
+      mapMaxZoom
+    } = this.props
+
+    const {
+      map
+    } = this.state
+
+    if (!map) return
+
+    let {
+      mapAnimationInterval
+    } = this.state
+
+    if (mapAnimationInterval) clearInterval(mapAnimationInterval)
+
+    map.setZoom(mapMaxZoom)
+    setTimeout(() => {
+      mapAnimationInterval = setInterval(this.iterateMapAnimation.bind(this), (1/MAP_ANIMATION_FREQ)*1000)
+      
+      this.setState({
+        mapAnimationInterval
+      })
+    }, MAP_ANIMATION_PAUSE*1000)
+  }
+
+  async createMap() {
+    const {
+      serverUrl,
+    } = this.props
+
+    const {
+      mapStyles
+    } = this.state
+    
+    try {
+      const google = await loadGoogleMapsLib(serverUrl, 'beta')
+      const map = new google.maps.Map(document.getElementById(MAP_ELEMENT_ID), {
+        center: { lat: 37.77, lng: -122.39 },
+        zoom: 8,
+        mapTypeId: google.maps.MapTypeId.TERRAIN,
+        styles: mapStyles,
+        disableDefaultUI: true,
+        isFractionalZoomEnabled: true // fraction zoom only allowed in 'v=beta'
+      })
+
+      this.setState({
+        google,
+        map
+      })
+    } catch (error) {
+      throw Error(`ExploreLivecam: error creating map: ${error}`)
+    }
+  }
+
+  updateMap(lat, lng) {
+    const {
+      google,
+      map,
+      marker: oldMarker
+    } = this.state
+
+    if (oldMarker) oldMarker.setMap(null)
+
+    const position = new google.maps.LatLng(lat, lng)
+    map.setCenter(position)
+    const newMarker = new google.maps.Marker({
+      position,
+      map
+    })
+
+    this.setState({
+      marker: newMarker
     })
   }
 
@@ -119,7 +314,7 @@ class ExploreLivecam extends Slide {
       feedRefreshDuration
     } = this.props
 
-    // this.createMap()
+    this.createMap()
 
     await this.fetchLiveFeeds()
 
@@ -134,20 +329,29 @@ class ExploreLivecam extends Slide {
     })
   }
 
+  clearIntervals() {
+    const {
+      feedInterval,
+      detailInterval,
+      mapAnimationInterval,
+    } = this.state
+
+    clearInterval(feedInterval)
+    clearInterval(detailInterval)
+    clearInterval(mapAnimationInterval)
+  }
+
   show(feeds) {
-    const currentFeed = this.createFeedInterval(feeds)
-    this.createFactInterval(currentFeed)
+    this.clearIntervals()
+    this.createFeedInterval(feeds)
   }
 
   hide() {
     const {
-      feedInterval,
-      factInterval,
       updateFeedsOnHide
     } = this.state
 
-    clearInterval(feedInterval)
-    clearInterval(factInterval)
+    this.clearIntervals()
 
     if (updateFeedsOnHide) {
       this.fetchLiveFeeds()
@@ -160,15 +364,16 @@ class ExploreLivecam extends Slide {
   content() {
     const {
       currentFeed,
+      detailFactMode,
       currentFact
     } = this.state
 
     let feedElement = (
-      <div class='slide'>
+      <div>
         <div>loading feeds!</div>
       </div>
     )
-    let feedMetadataElement = '', feedFactElement = ''
+    let feedInfoElement = ''
     if (currentFeed) {
       const feedUrl = `${currentFeed.feedUrl}&mute=1&enablejsapi=1`
       feedElement = (
@@ -183,31 +388,43 @@ class ExploreLivecam extends Slide {
         </div>
       )
 
-      feedMetadataElement = (
-        <div class='explore-livecam-metadata'>
+      feedInfoElement = (
+        <div class='explore-livecam-info'>
           <div class='explore-livecam-title'>{currentFeed.title}</div>
-          <div class='explore-livecam-location'>{currentFeed.location}</div>
+          <div class='explore-livecam-location'>{currentFeed.location.name}</div>
           <div class='explore-livecam-conditions'>
-            <div>{convertTime(new Date(), currentFeed.timezone, { timeStyle: 'short' })}</div>
+            <div>{convertTime(new Date(), currentFeed.location.timezone, { timeStyle: 'short' })}</div>
             <div>{parseInt(currentFeed.weather.tempF)}{String.fromCharCode(0xb0)}F & {currentFeed.weather.weatherShort}</div>
           </div>
         </div>
       )
     }
+
+    let feedFactElement
     if (currentFact) {
       feedFactElement = (
-        <div class='explore-livecam-fact'>
+        <div 
+          className={`explore-livecam-fact feed-livecam-details ${detailFactMode ? '' : 'hidden'}`}
+        >
           <div>{currentFact}</div>
         </div>
       )
     }
-    
+    const feedDetailElement = (
+      <div>
+        <div 
+          id={MAP_ELEMENT_ID}
+          className={`feed-livecam-details ${!currentFeed || detailFactMode ? 'hidden' : ''}`}
+        ></div>
+        {feedFactElement}
+      </div>
+    )
 
     return (
       <div class='slide'>
         {feedElement}
-        {feedMetadataElement}
-        {feedFactElement}
+        {feedInfoElement}
+        {feedDetailElement}
       </div>
     )
   }

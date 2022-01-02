@@ -284,7 +284,7 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 .explore-livecam-feed, .explore-livecam-feed * {
   pointer-events: none;
 }
-.explore-livecam-metadata {
+.explore-livecam-info {
   position: absolute;
   bottom: 20px;
   right: 20px;
@@ -303,14 +303,24 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   display: flex;
   justify-content: space-evenly;
 }
-.explore-livecam-fact {
+.feed-livecam-details {
   position: absolute;
   bottom: 20px;
   left: 20px;
   max-width: 50%;
   max-height: 40%;
   overflow: hidden;
+  transition: bottom 0.5s ease;
+}
+.feed-livecam-details.hidden {
+  bottom: -100%;
+}
+.explore-livecam-fact {
   background: white;
   font-size: large;
   padding: 10px;
+}
+#explore-livecam-map {
+  width: 30%;
+  height: 25%;
 }

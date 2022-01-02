@@ -1,6 +1,6 @@
 
 ---
-duration: 30
+duration: 300
 slides:
   - type: Message
     msg: Merry Christmas Dad!
@@ -86,6 +86,9 @@ slides:
 
   - type: ExploreLivecam
     feedDuration: 30
-    factDuration: 10
-    duration: 60
+    detailDuration: 10
+    startInFactMode: false
+    mapMaxZoom: 10
+    mapMinZoom: 3
+    duration: 6000
     feedRefreshDuration: 7200 # recheck livefeeds every 2 hours

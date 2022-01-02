@@ -33,8 +33,12 @@ router.get('/livefeeds', async (ctx, next) => {
         title: info.data.title,
         feedUrl: info.data.large_feed_html,
         currentViewers: info.data.current_viewers,
-        location: info.data.location_text,
-        timezone: info.data.weather.current.timezone,
+        location: {
+          name: info.data.location_text,
+          lat: info.data.latlong[0],
+          lng: info.data.latlong[1],
+          timezone: info.data.weather.current.timezone
+        },
         facts: _.map(info.data.facts, 'fact'),
         weather: {
           isDay: info.data.weather.current.isDay,

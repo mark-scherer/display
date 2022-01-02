@@ -75,7 +75,7 @@ const timeDiffInSecs = function(datetimeA, datetimeB) {
   return (_timeA.valueOf() - _timeB.valueOf()) / 1000
 }
 
-const loadGoogleMapsLib = async function(serverUrl) {
+const loadGoogleMapsLib = async function(serverUrl, version='weekly') {
 
   let google
   try {
@@ -83,7 +83,10 @@ const loadGoogleMapsLib = async function(serverUrl) {
       key: mapsApiKey
     } = await fetch(`${serverUrl}/apiKey/mapsApi`).then(response => response.json())
 
-    const loader = new Loader({ apiKey: mapsApiKey})
+    const loader = new Loader({ 
+      apiKey: mapsApiKey,
+      version
+    })
     google = await loader.load()
   } catch (error) {
     throw Error(`error loading google maps lib: ${JSON.stringify({ error: String(error), serverUrl })}`)
