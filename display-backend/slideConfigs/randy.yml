@@ -90,5 +90,5 @@ slides:
     startInFactMode: true
     mapMaxZoom: 10
     mapMinZoom: 3
-    duration: 6000
+    duration: 60
     feedRefreshDuration: 7200 # recheck livefeeds every 2 hours
