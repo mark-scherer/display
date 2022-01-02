@@ -7,6 +7,7 @@ const Koa = require('koa')
 const serve = require('koa-static')
 const cors = require('@koa/cors')
 const send = require('koa-send')
+const bodyParser = require('koa-bodyparser')
 const router = require('./router.js')
 
 const PORT = 8000
@@ -17,6 +18,7 @@ const app = new Koa()
 const main = async function() {
   app
     .use(cors())
+    .use(bodyParser())
     .use(router.routes(), router.allowedMethods())
     .use(serve(path.join(__dirname, BUILD_DIR)))
     .use(async (ctx) => {
