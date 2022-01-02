@@ -87,7 +87,7 @@ slides:
   - type: ExploreLivecam
     feedDuration: 30
     detailDuration: 10
-    startInFactMode: false
+    startInFactMode: true
     mapMaxZoom: 10
     mapMinZoom: 3
     duration: 6000
