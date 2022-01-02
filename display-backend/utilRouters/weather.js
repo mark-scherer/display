@@ -31,8 +31,33 @@ router.post('/current', async (ctx, next) => {
     if (lat === null || lat === undefined) ctx.throw(404, `location missing param: lat: ${JSON.stringify({ index, loc })}`)
     if (lng === null || lng === undefined) ctx.throw(404, `location missing param: lng: ${JSON.stringify({ index, loc })}`)
 
-    const data = await fetch(`${CURRENT_WEATHER_URL}?appid=${openWeatherKey}&units=imperial&lat=${lat}&lon=${lng}`).then(response => response.json())
-    if (data.cod !== 200) ctx.throw(data.cod, data.message)
+    const rawData = await fetch(`${CURRENT_WEATHER_URL}?appid=${openWeatherKey}&units=imperial&lat=${lat}&lon=${lng}`).then(response => response.json())
+    if (rawData.cod !== 200) ctx.throw(rawData.cod, rawData.message)
+
+    const data = {
+      timestamp: (new Date(rawData.dt*1000)).toUTCString(),
+      location: {
+        city: rawData.name,
+        lat: rawData.coord.lat,
+        lng: rawData.coord.lon,
+      },
+
+      weatherShort: rawData.weather[0].main.toLowerCase(),
+      weatherLong: rawData.weather[0].description.toLowerCase(),
+      weatherIcon: rawData.weather[0].icon,
+
+      ..._.pick(rawData.main, ['temp', 'pressure', 'humidity']),
+      feelsLike: rawData.main.feels_like,
+
+      windSpeed: rawData.wind.speed,
+      windDir: rawData.wind.deg,
+      windGustSpeed: rawData.wind.gust,
+
+      cloudCover: rawData.clouds.all,
+
+      sunrise: (new Date(rawData.sys.sunrise*1000)).toUTCString(),
+      sunset: (new Date(rawData.sys.sunset*1000)).toUTCString(),
+    }
 
     result[index] = data
   }, {concurrency: WEATHER_CONCURRENCY})
