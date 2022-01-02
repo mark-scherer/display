@@ -131,7 +131,7 @@ class ExploreLivecam extends Slide {
     } = this.state
 
     if (!currentFeed) currentFeed = this.state.currentFeed
-    if (!prevDetailFactMode) prevDetailFactMode = this.state.detailFactMode
+    if (prevDetailFactMode === null || prevDetailFactMode === undefined) prevDetailFactMode = this.state.detailFactMode
 
     // special case: no feed yet loaded
     if (!currentFeed) return
@@ -139,9 +139,7 @@ class ExploreLivecam extends Slide {
     // special case: feed has no facts
     let detailFactMode, currentFact
     if (!currentFeed.facts || !currentFeed.facts.length) {
-      this.setState({
-        detailFactMode: false
-      })
+      detailFactMode = false
     } else {
       detailFactMode = !prevDetailFactMode
 
@@ -152,7 +150,7 @@ class ExploreLivecam extends Slide {
       }
     }
 
-    clearInterval(mapAnimationInterval)
+    if (mapAnimationInterval) clearInterval(mapAnimationInterval)
     if (!detailFactMode) this.createMapAnimationInterval()
 
     this.setState({
@@ -179,15 +177,16 @@ class ExploreLivecam extends Slide {
     
     let zoom = map.getZoom()
     zoom -= stepValue
-    map.setZoom(zoom)
 
     if (zoom <= mapMinZoom) {
+      zoom = mapMinZoom
       clearInterval(mapAnimationInterval)
       this.setState({
         mapAnimationInterval: null
       })
     }
 
+    map.setZoom(zoom)
     // console.log(`updated map zoom: ${JSON.stringify({zoom, mapMinZoom, mapMaxZoom })}`)
   }
 
@@ -243,14 +242,14 @@ class ExploreLivecam extends Slide {
 
     if (!map) return
 
-    let {
-      mapAnimationInterval
-    } = this.state
-
-    if (mapAnimationInterval) clearInterval(mapAnimationInterval)
-
     map.setZoom(mapMaxZoom)
+
+    let mapAnimationInterval
     setTimeout(() => {
+      // do this right before recreating interval to minimze potential for async overwrite of mapAnimationInterval
+      mapAnimationInterval = this.state.mapAnimationInterval
+      if (mapAnimationInterval) clearInterval(mapAnimationInterval)
+
       mapAnimationInterval = setInterval(this.iterateMapAnimation.bind(this), (1/MAP_ANIMATION_FREQ)*1000)
       
       this.setState({
@@ -276,6 +275,7 @@ class ExploreLivecam extends Slide {
         mapTypeId: google.maps.MapTypeId.TERRAIN,
         styles: mapStyles,
         disableDefaultUI: true,
+        keyboardShortcuts: false,
         isFractionalZoomEnabled: true // fraction zoom only allowed in 'v=beta'
       })
 
