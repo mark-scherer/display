@@ -33,7 +33,19 @@ slides:
         lat: 38.87
         lng: -77.06
 
-      # random cities
+      # random cities: North America
+      - name: Honolulu
+        timezone: US/Hawaii
+        labelLocation: south
+        lat: 21.30
+        lng: -157.86
+      - name: Anchorage
+        timezone: America/Anchorage
+        labelLocation: north
+        lat: 61.16
+        lng: -149.93
+
+      # random cities: Oceania
       - name: Sydney
         timezone: Australia/Sydney
         labelLocation: south
@@ -44,46 +56,69 @@ slides:
         labelLocation: south
         lat: -36.89
         lng: 174.79
+      - name: South Pole
+        timezone: Antarctica/South_Pole
+        labelLocation: extra-north
+        lat: -90.00
+        lng: 0.00
+
+      # random cities: asia
       - name: Seoul
         timezone: Asia/Seoul
-        labelLocation: east
+        labelLocation: south
         lat: 37.54
         lng: 126.99
-      - name: Buenos Aires
-        timezone: America/Argentina/Buenos_Aires
+      - name: Kathmandu
+        timezone: Asia/Kathmandu
         labelLocation: south
-        lat: -34.80
-        lng: -58.18
+        lat: 27.71
+        lng: 85.32
+      - name: Novosibirsk
+        timezone: Asia/Novosibirsk
+        labelLocation: north
+        lat: 55.00
+        lng: 82.90
+      - name: Petropavlovsk
+        timezone: Asia/Novosibirsk
+        labelLocation: south
+        lat: 53.03
+        lng: 158.66
+      - name: Mecca
+        timezone: Asia/Riyadh
+        labelLocation: south
+        lat: 21.42
+        lng: 39.81
+
+      # random cities: south america
+      - name: Aunscion
+        timezone: America/Asuncion
+        labelLocation: east
+        lat: -25.28
+        lng: -57.63
+
+      # random cities: europe
       - name: London
         timezone: Europe/London
-        labelLocation: north
+        labelLocation: west
         lat: 51.51
         lng: -0.13
+      - name: Moscow
+        timezone: Europe/Moscow
+        labelLocation: north
+        lat: 55.76
+        lng: 37.63
+
+      # random cities: africa
       - name: Cape Town
         timezone: Africa/Johannesburg
         labelLocation: south
         lat: -34.03
         lng: 18.53
-      - name: Anchorage
-        timezone: America/Anchorage
-        labelLocation: north
-        lat: 61.16
-        lng: -149.93
-      - name: Honolulu
-        timezone: US/Hawaii
-        labelLocation: south
-        lat: 21.30
-        lng: -157.86
-      - name: Mumbai
-        timezone: Asia/Calcutta
-        labelLocation: south
-        lat: 19.08
-        lng: 72.89
-      - name: Cairo
-        timezone: Africa/Cairo
-        labelLocation: south
-        lat: 30.04
-        lng: 31.24
+      - name: Timbuktu
+        timezone: Africa/Timbuktu
+        labelLocation: west
+        lat: 16.77
+        lng: -3.01
 
   - type: ExploreLivecam
     feedDuration: 30

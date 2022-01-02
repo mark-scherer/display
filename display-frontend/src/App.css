@@ -265,7 +265,10 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 }
 
 .sunmap-point-label.north {
-  transform: translate(-50%, calc(-200% + 20px));
+  transform: translate(-50%, calc(-120%));
+}
+.sunmap-point-label.extra-north {
+  transform: translate(-50%, calc(-150%));
 }
 .sunmap-point-label.south {
   transform: translate(-50%, 20px);
