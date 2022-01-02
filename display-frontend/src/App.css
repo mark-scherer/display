@@ -293,7 +293,7 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   /* padding: 10px; */
   max-width: 30%
 }
-.explore-livecam-metadata * {
+.explore-livecam-info * {
   padding: 0px 5px;
 }
 .explore-livecam-title {
