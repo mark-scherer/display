@@ -53,16 +53,22 @@ const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
   label coloring params
     - color codes by temperature
 */
-const MIN_TEMP = 0
+const MIN_TEMP = -20
 const MAX_TEMP = 100
 const TEMP_COLORS = ['lightskyblue', 'magenta', 'goldenrod', 'red']
+
+/*
+  location detail params
+*/
+const DETAIL_MODES = ['temp', 'feelsLike'] // will iterate details in this order
 
 class SunMap extends Slide {
   static requiredArgs = [
     'mapSource',
     'originLocation',
     'dawnDuskDurationMins',
-    'weatherDuration'       // seconds between weather data refreshs
+    'weatherDuration',       // seconds between weather data refreshs
+    'detailModeDuration'     // length in secs between detail mode iteration
   ]
 
   constructor(props) {
@@ -79,7 +85,8 @@ class SunMap extends Slide {
       animationInterval: null,
       animationRestartInterval: null,
       sunDataRefetchTimeout: null, // timeout to refetch sundata at midnight local
-      detailMode: 'temp', // what data to show under otherLocation markers
+      detailMode: DETAIL_MODES[0], // what data to show under otherLocation markers
+      detailModeInterval: null,
       weatherData: null,
       weatherInterval: null,
     }
@@ -357,19 +364,44 @@ class SunMap extends Slide {
     })
   }
 
+  iterateDetailMode() {
+    let {
+      detailMode
+    } = this.state
+    
+    let detailIndex = DETAIL_MODES.indexOf(detailMode) + 1
+    if (detailIndex >= DETAIL_MODES.length) detailIndex = 0
+    detailMode = DETAIL_MODES[detailIndex]
+
+    this.setState({
+      detailMode
+    })
+  }
+
   show() {
+    const {
+      detailModeDuration
+    } = this.props
+    
     let {
       mapSource,
-      animationRestartInterval
+      animationRestartInterval,
+      detailModeInterval
     } = this.state
 
     const realTime = new Date()
     const currentlyDisplayedTime = realTime
 
+    clearInterval(detailModeInterval)
+    const detailMode = DETAIL_MODES[0]
+    detailModeInterval = setInterval(this.iterateDetailMode.bind(this), detailModeDuration*1000)
+
     this.setState({
       realTime,
       currentlyDisplayedTime,
       animationRestartInterval,
+      detailModeInterval,
+      detailMode
     })
 
     if (MAP_SOURCE_GUIDE[mapSource].animate) {
@@ -380,10 +412,13 @@ class SunMap extends Slide {
 
   hide() {
     const {
-      animationRestartInterval
+      animationRestartInterval,
+      detailModeInterval
     } = this.state
 
     clearInterval(animationRestartInterval)
+    clearInterval(detailModeInterval)
+
   }
 
   content() {
@@ -502,6 +537,14 @@ class SunMap extends Slide {
               class='sunmap-point-detail'
               style={{ color : colorScale(TEMP_COLORS, (temp - MIN_TEMP)/(MAX_TEMP - MIN_TEMP))}}
             >{Math.round(temp)}{String.fromCharCode(0xb0)}F</div>
+          )
+        } else if (detailMode === 'feelsLike' && weatherData && weatherData[location.name]) {
+          const feelsLike = weatherData[location.name].feelsLike
+          detailElement = (
+            <div 
+              class='sunmap-point-detail'
+              style={{ color : colorScale(TEMP_COLORS, (feelsLike - MIN_TEMP)/(MAX_TEMP - MIN_TEMP))}}
+            ><span class='sunmap-point-detail-caption'>feels</span> {Math.round(feelsLike)}{String.fromCharCode(0xb0)}F</div>
           )
         }
 

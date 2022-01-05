@@ -253,9 +253,12 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 .sunmap-point-label {
   width: fit-content;
   height: fit-content;
-  
   font-size: small;
   padding: 0 4px;
+}
+.sunmap-point-detail-caption {
+  font-size: smaller;
+  color: inherit !important;
 }
 
 .sunmap-point-label.north {
