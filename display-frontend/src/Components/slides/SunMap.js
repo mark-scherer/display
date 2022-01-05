@@ -442,8 +442,8 @@ class SunMap extends Slide {
     if (currentlyDisplayedTime) {
       sunMapUrl = this.getSunMapUrl(currentlyDisplayedTime)
 
-      const timeZoneParts = currentlyDisplayedTime.toLocaleString('en-US', {timeZoneName: 'short'}).split(' ')
-      const formattedAnimationTime = `${currentlyDisplayedTime.toLocaleTimeString('en-US', {timeStyle: 'short'})} ${timeZoneParts[timeZoneParts.length - 1]}`
+      const timezoneParts = convertTime(currentlyDisplayedTime, originLocation.timezone, {timeZoneName: 'short'}).split(' ')
+      const formattedAnimationTime = `${convertTime(currentlyDisplayedTime, originLocation.timezone, {timeStyle: 'short'})} ${timezoneParts[timezoneParts.length - 1]}`
 
       const timeDiffMins = (currentlyDisplayedTime.valueOf() - realTime.valueOf())/1000/60
       const timeDiffHours = Math.floor(timeDiffMins/60)
@@ -478,6 +478,7 @@ class SunMap extends Slide {
         return `${hours}:${this.formatTime(mins)}`
       }
 
+      const originTimezone = originLocation.timezone
       sunDataContent = (
         <div class='sunmap-sundata'>
           <div>{formattedDate}</div>
@@ -485,15 +486,15 @@ class SunMap extends Slide {
             <tbody>
               <tr>
                 <td class='label'>sunrise:</td>
-                <td>{sunData.originLocation.today.sunrise.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{convertTime(sunData.originLocation.today.sunrise, originLocation.timezone, {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>solar noon:</td>
-                <td>{sunData.originLocation.today.solarNoon.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{convertTime(sunData.originLocation.today.solarNoon, originLocation.timezone, {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>sunset:</td>
-                <td>{sunData.originLocation.today.sunset.toLocaleTimeString('en-US', {timeStyle: 'short'})}</td>
+                <td>{convertTime(sunData.originLocation.today.sunset, originLocation.timezone, {timeStyle: 'short'})}</td>
               </tr>
               <tr>
                 <td class='label'>day length:</td>

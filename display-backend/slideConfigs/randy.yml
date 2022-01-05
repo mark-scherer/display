@@ -11,6 +11,7 @@ slides:
     mapSource: opentopia
     dawnDuskDurationMins: 60
     weatherDuration: 3600
+    detailModeDuration: 5
     originLocation:
       timezone: America/Kentucky/Louisville
       lat: 38.44
@@ -79,7 +80,7 @@ slides:
         lat: 55.00
         lng: 82.90
       - name: Petropavlovsk
-        timezone: Asia/Novosibirsk
+        timezone:	Asia/Kamchatka
         labelLocation: south
         lat: 53.03
         lng: 158.66
