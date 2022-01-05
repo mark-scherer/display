@@ -223,6 +223,9 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   background: white;
   color: black;
 }
+.sunmap-point.day {
+  border: solid black;
+}
 .sunmap-point.dusk, .sunmap-point.dusk * {
   background: lightpink;
   color: black;
@@ -231,30 +234,21 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   background: black;
   color: white;
 }
+.sunmap-point.night {
+  border: solid white;
+}
 
 .sunmap-point.primary {
   height: 15px;
   width: 15px;
-  
   border-radius: 20px;
+  border-width: 5px;
 }
-.sunmap-point.primary.dawn {
-  border: 5px solid lightgoldenrodyellow;
-}
-.sunmap-point.primary.day {
-  border: 5px solid black;
-}
-.sunmap-point.primary.dusk {
-  border: 5px solid lightpink;
-}
-.sunmap-point.primary.night {
-  border: 5px solid white;
-}
-
 .sunmap-point.secondary {
   height: 10px;
   width: 10px;
   border-radius: 10px;
+  border-width: 1px;
 }
 .sunmap-point-label {
   width: fit-content;

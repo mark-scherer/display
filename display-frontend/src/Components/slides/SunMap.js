@@ -55,7 +55,7 @@ const ANIMATION_CYCLE_SECS = 30 // number of secs until animation restarts
 */
 const MIN_TEMP = 0
 const MAX_TEMP = 100
-const TEMP_COLORS = ['blue', 'magenta', 'goldenrod', 'red']
+const TEMP_COLORS = ['lightskyblue', 'magenta', 'goldenrod', 'red']
 
 class SunMap extends Slide {
   static requiredArgs = [
