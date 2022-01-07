@@ -3,6 +3,7 @@
 */
 
 import React from 'react';
+import { timeDiffInSecs, secsTilNextTimeOccurance } from '../incl/utils.js'
 
 // janky but for each slide must import AND add to SlideComponents
 import Message from "./slides/Message.js"
@@ -26,25 +27,26 @@ class Display extends React.Component {
 
     const splitPath = window.location.pathname.split('/')
     const configName = splitPath.length > 0 ? splitPath[splitPath.length - 1] : null
-    // const urlParams = new URLSearchParams(window.location.search)
-    // const configName = urlParams.get('who')
 
     // route requests to actual backend server, not where frontend server from during dev
     const serverUrl = process.env.NODE_ENV === 'development' ? 
       `${window.location.protocol}//${window.location.hostname}:8000` : // just hard coding server port during dev
       `${window.location.protocol}//${window.location.host}`
 
-      this.state = {
-        configName,
-        serverUrl,
-        config: null,
-        currentSlideIndex: -1,
-        currentSlideDuration: null,
-        nextSlideInterval: null,
-        fullscreen: false,
-        slideWidth: window.innerWidth,
-        slideHeight: window.innerHeight
-      }    
+    this.state = {
+      configName,
+      serverUrl,
+      config: null,
+      currentSlideIndex: -1,
+      currentSlideDuration: null,
+      nextSlideInterval: null,
+      fullscreen: false,
+      darkMode: false,
+      slideWidth: window.innerWidth,
+      slideHeight: window.innerHeight,
+      darkModeStart: null,
+      darkModeEnd: null
+    }
   }
 
   toggleFullscreen() {
@@ -118,6 +120,54 @@ class Display extends React.Component {
     })
   }
 
+  checkDarkMode(darkModeStart, darkModeEnd) {
+    if (!darkModeStart) darkModeStart = this.state.darkModeStart
+    if (!darkModeEnd) darkModeEnd = this.state.darkModeEnd
+
+    if (!darkModeStart || !darkModeEnd) return
+
+    const currentTime = new Date()
+    const darkMode = timeDiffInSecs(currentTime, darkModeEnd) <= 0 || timeDiffInSecs(currentTime, darkModeStart) >= 0
+
+    console.log(`switching to ${darkMode ? 'darkMode' : 'lightMode'}: ${JSON.stringify({ 
+      currentTime: currentTime.toLocaleTimeString(),
+      darkModeStart: darkModeStart ? darkModeStart.toLocaleTimeString() : 'null',
+      darkModeEnd: darkModeEnd ? darkModeEnd.toLocaleTimeString() : 'null'
+    })}`)
+
+    this.setState({
+      darkMode
+    })
+  }
+
+  /*
+    rerun darkMode check, schedule timeout to recheck at next switch time
+  */
+  checkAndRescheduleDarkModeTimeout(darkModeStart, darkModeEnd) {
+    if (!darkModeStart) darkModeStart = this.state.darkModeStart
+    if (!darkModeEnd) darkModeEnd = this.state.darkModeEnd
+
+    let {
+      darkModeTimeout
+    } = this.state
+
+    if (!darkModeStart || !darkModeEnd) return
+
+    this.checkDarkMode(darkModeStart, darkModeEnd)
+
+    const currentTime = new Date()
+    clearTimeout(darkModeTimeout)
+    const nextDarkModeStart = secsTilNextTimeOccurance(currentTime, darkModeStart)
+    const nextDarkModeEnd = secsTilNextTimeOccurance(currentTime, darkModeEnd)
+    const nextSwitch = Math.min(nextDarkModeStart, nextDarkModeEnd)  + 1 // delay til slightly after scheduled switch to ensure method run within next window
+    darkModeTimeout = setTimeout(this.checkAndRescheduleDarkModeTimeout.bind(this), nextSwitch*1000)
+
+    console.log(`scheduled next darkMode switch for ${(new Date(currentTime.valueOf() + nextSwitch*1000)).toString()} (+${nextSwitch} secs)`)
+    this.setState({
+      darkModeTimeout
+    })
+  }
+
   async componentDidMount() {
     const {
       configName,
@@ -144,13 +194,42 @@ class Display extends React.Component {
       if (!SlideComponents[slideConfig.type]) throw Error(`config ${configName} specifies invalid slide type for slide #${index}: ${JSON.stringify({ type: slideConfig.type })}`)
     })
 
+    // initate render
     this.iterateSlide(true, true, config)
 
+    // setup darkMode, darkModeTimeout
+    const parseDarkModeTime = (input, name) => {
+      const inputRegex = new RegExp('^[0-9]{1,2}:[0-9]{1,2}$')
+      if (!inputRegex.test(input)) throw Error(`invalid config input: darkMode.${name}: ${input} (should be HH:MM)`)
+      const [hours, mins] = input.split(':').map(val => parseInt(val))
+      if (!(hours >= 0 && hours <= 23)) throw Error(`invalid config input: darkMode.${name}: ${input} (hours value not 0-23)`)
+      if (!(mins >= 0 && mins <= 59)) throw Error(`invalid config input: darkMode.${name}: ${input} (mins value not 0-59)`)
+
+      let result = new Date(0)
+      result.setHours(hours)
+      result.setMinutes(mins)
+      return result
+    }
+
+    let darkModeStart, darkModeEnd
+    if (config.darkMode) {
+      if (!config.darkMode.start) throw Error(`missing config input: darkMode.start (should be HH:MM)`)
+      if (!config.darkMode.end) throw Error(`missing config input: darkMode.start (should be HH:MM)`)
+
+      darkModeStart = parseDarkModeTime(config.darkMode.start, 'start')
+      darkModeEnd = parseDarkModeTime(config.darkMode.end, 'end')
+    }
+
+    this.checkAndRescheduleDarkModeTimeout(darkModeStart, darkModeEnd)
+
+    // display-wide event handlers
     document.addEventListener('keydown', this.handleKeyDown.bind(this))
     window.addEventListener('resize', this.handleResize.bind(this))
 
     this.setState({
-      config
+      config,
+      darkModeStart,
+      darkModeEnd
     })
   }
 
@@ -160,6 +239,7 @@ class Display extends React.Component {
       config,
       currentSlideIndex,
       fullscreen,
+      darkMode,
       slideWidth,
       slideHeight,
       serverUrl
@@ -183,9 +263,10 @@ class Display extends React.Component {
       return React.createElement(SlideComponents[slideConfig.type], {
         ...slideConfig,
         serverUrl,
-        displayed: currentSlideIndex === index,
+        darkMode,
         slideWidth,
-        slideHeight
+        slideHeight,
+        displayed: currentSlideIndex === index,
       })
     })
     

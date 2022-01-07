@@ -1,6 +1,9 @@
 # slide config for dev
 ---
 duration: 1000
+darkMode:
+  start: 22:00
+  end: 7:00
 slides:
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'

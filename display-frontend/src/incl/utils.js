@@ -76,6 +76,16 @@ const timeDiffInSecs = function(datetimeA, datetimeB) {
   return (_timeA.valueOf() - _timeB.valueOf()) / 1000
 }
 
+/*
+  ignoring date components, returns time in seconds starting at startDatetime's time until next occurance of targetDatetime's time accounting for timezone differences
+*/
+const secsTilNextTimeOccurance = function(startDatetime, targetDatetime) {
+  let result = timeDiffInSecs(targetDatetime, startDatetime)
+  if (result < 0) result = (60*60*24) + result // assume next occurance of datetimeB's time is 24 hours ahead of last occurance
+  
+  return result
+}
+
 const colorScale = function(colors, frac) {
   const scale = chroma.scale(colors)
   return scale(frac).hex()
@@ -110,6 +120,7 @@ export {
   convertTime,
   roundTime,
   timeDiffInSecs,
+  secsTilNextTimeOccurance,
 
   colorScale,
 

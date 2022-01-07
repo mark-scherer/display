@@ -7,11 +7,9 @@ import { Promise as Bluebird } from 'bluebird'
 import { randomElement, loadGoogleMapsLib } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js'
-// import 'react-responsive-carousel/lib/styles/carousel.min.css'
-// import { Carousel } from 'react-responsive-carousel'
 
 // see https://developers.google.com/maps/documentation/javascript/style-reference
-const mapStyles = [
+const baseMapStyles = [
   {
     featureType: 'administrative',
     elementType: 'labels',
@@ -35,6 +33,44 @@ const mapStyles = [
   }
 ]
 
+const mapMods = {
+  darkMode: [
+    {
+      featureType: 'all',
+      elementType: 'all',
+      stylers: [
+        { 'invert_lightness': true }
+      ]
+    },
+    {
+      featureType: 'water',
+      elementType: 'geometry',
+      stylers: [
+        { 'color': '#010514' }
+      ]
+    },
+    {
+      featureType: 'landscape.landcover',
+      elementType: 'geometry',
+      stylers: [
+        { 'lightness': -50 }
+      ]
+    },
+    {
+      featureType: 'road.highway',
+      elementType: 'labels',
+      stylers: [
+        { 'visibility': 'off' }
+      ]
+    }
+  ]
+}
+
+const MAP_DIV_ID = {
+  lightMode: 'driving-map-light',
+  darkMode: 'driving-map-dark',
+}
+
 class DrivingMap extends Slide {
   static requiredArgs = [
     'title',
@@ -48,12 +84,9 @@ class DrivingMap extends Slide {
       // include state partially set in base Slide ctor
       ...this.state,
 
-      // rendering controls
-      mapStyles,
-
       // temporarily null rendering objects
       google: null,
-      map: null,
+      maps: {},
       directions: null, // type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
       markers: null,    // markers[directionsIndex] = type google.maps.Marker <- directionsIndex = stopIndex + 1
       stopPhotos: null, // stopPhotos[stopIndex]: {filename: url}   // where stopIndex is props.stops[stopIndex] <- directionsInde = stopIndex + 1
@@ -99,17 +132,28 @@ class DrivingMap extends Slide {
       - type: major or minor, controls marker styling
       - labelMarkerMargin: overwrite margin between pointMarker and labelMarker, useful for spacing out labels
   */
-  formatMarkerOptions(stopConfig, position, index, spotlight, google) {
+  formatMarkerOptions(stopConfig, position, index, options, google) {
+    const {
+      spotlight,
+      darkMode
+    } = options
+
+    // marker color scheme
+    const COLOR_SCHEME = {
+      lightMode: {
+        primary: 'white',
+        text: 'black'
+      },
+      darkMode: {
+        primary: 'black',
+        text: 'white'
+      }
+    }
+    
     // marker constants
       // distances are in icon.path's coordinate system
     const DEFAULT_LABEL_POSITON = 'north'
     const DEFAULT_TYPE = 'major'
-    const MARKER_COLORS = [
-      // 'lightblue',
-      // 'darkseagreen',
-      // 'wheat'
-      'lightgray'
-    ]
 
     // these props controlled by marker type
     const TYPE_CONFIGS = {
@@ -135,15 +179,18 @@ class DrivingMap extends Slide {
       }
     }
 
+    const colorScheme = darkMode ? COLOR_SCHEME.darkMode : COLOR_SCHEME.lightMode
+
     // these props controlled by marker spotlight status
     const SPOTLIGHT_CONFIGS = {
       true: {
-        fillColor: 'white',
+        fillColor: colorScheme.primary,
+        strokeColor: colorScheme.text,
         strokeOpacity: 1,
         strokeWeight: 2
       },
       false: {
-        fillColor: MARKER_COLORS[index % MARKER_COLORS.length],
+        fillColor: colorScheme.primary,
         strokeOpacity: 0
       }
     }
@@ -202,11 +249,13 @@ class DrivingMap extends Slide {
           anchor: labelMarkerAnchor,
           fillColor: spotlightConfig.fillColor,
           fillOpacity: 1,
+          strokeColor: spotlightConfig.strokeColor,
           strokeOpacity: spotlightConfig.strokeOpacity,
           strokeWeight: spotlightConfig.strokeWeight
         },
         label: {
           text: labelText,
+          color: colorScheme.text,
           fontSize: typeConfig.LABEL_FONT_SIZE,
           fontWeight: typeConfig.LABEL_FONT_WEIGHT
         },
@@ -220,6 +269,7 @@ class DrivingMap extends Slide {
           path: pointMarkerPath,
           fillColor: spotlightConfig.fillColor,
           fillOpacity: 1,
+          strokeColor: spotlightConfig.strokeColor,
           strokeOpacity: 1,
           strokeWeight: typeConfig.POINT_MARKER_STROKE_WEIGHT
         },
@@ -231,11 +281,12 @@ class DrivingMap extends Slide {
   async createMap() {
     const {
       serverUrl,
-      mapStyles,
+      maps
     } = this.state
     
     const {
-      stops
+      stops,
+      darkMode
     } = this.props
 
     try {
@@ -243,12 +294,18 @@ class DrivingMap extends Slide {
       const directionsService = new google.maps.DirectionsService()
       const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
-      const map = new google.maps.Map(document.getElementById('driving-map'), {
+      const mapType = darkMode ? 'darkMode' : 'lightMode'
+      const styles = baseMapStyles.concat(mapMods[mapType] || [])
+      const mapElementId = darkMode ? MAP_DIV_ID[mapType] : MAP_DIV_ID[mapType]
+      
+      const map = new google.maps.Map(document.getElementById(mapElementId), {
         center: { lat: 37.77, lng: -122.39 },
         zoom: 8,
         mapTypeId: google.maps.MapTypeId.TERRAIN,
-        styles: mapStyles,
-        disableDefaultUI: true
+        styles,
+        backgroundColor: darkMode ? 'black' : 'white',
+        disableDefaultUI: true,
+        keyboardShortcuts: false
       })
       directionsRenderer.setMap(map)
       
@@ -275,12 +332,13 @@ class DrivingMap extends Slide {
         directionsZoom = map.getZoom()        
       }
 
+      maps[mapType] = map
       this.setState({
         google,
-        map,
+        maps,
         directions: directionsResult,
         directionsCenter,
-        directionsZoom,
+        directionsZoom
       })
 
       this.createMapMarkers()
@@ -293,16 +351,19 @@ class DrivingMap extends Slide {
   createMapMarkers(spotlightStopIndex) {
     const {
       google,
-      map,
+      maps,
       directions,
       markers: oldMarkers
     } = this.state
 
     const {
-      stops
+      stops,
+      darkMode
     } = this.props
 
     if (spotlightStopIndex === undefined || spotlightStopIndex === null) spotlightStopIndex = this.state.spotlightStopIndex // if not provided, check current state
+
+    const currentMap = maps[darkMode ? 'darkMode' : 'lightMode']
 
     let newMarkers = []
     directions.routes[0].legs.forEach((directionsLeg, directionsIndex) => {
@@ -310,16 +371,24 @@ class DrivingMap extends Slide {
       try {
         // special case to add origin marker
         if (directionsIndex === 0) {
-          this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, spotlightStopIndex === 0, google).forEach(markerOptions => {
+          const originOptions = {
+            spotlight: spotlightStopIndex === 0,
+            darkMode
+          }
+          this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, originOptions, google).forEach(markerOptions => {
             const originMarker = new google.maps.Marker(markerOptions)
-            originMarker.setMap(map)
+            originMarker.setMap(currentMap)
             newMarkers.push(originMarker)
           })    
         }
 
-        this.formatMarkerOptions(stops[stopIndex], directionsLeg.end_location, stopIndex, spotlightStopIndex === stopIndex, google).forEach(markerOptions => {
+        const options = {
+          spotlight: spotlightStopIndex === stopIndex,
+          darkMode
+        }
+        this.formatMarkerOptions(stops[stopIndex], directionsLeg.end_location, stopIndex, options, google).forEach(markerOptions => {
           const marker = new google.maps.Marker(markerOptions)
-          marker.setMap(map)
+          marker.setMap(currentMap)
           newMarkers.push(marker)
         })
       } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, directionsIndex, stopIndex })}`)}
@@ -382,7 +451,7 @@ class DrivingMap extends Slide {
   async iterateSpotlight() {
     const {
       google,
-      map,
+      maps,
       directions,
       directionsCenter,
       directionsZoom,
@@ -392,12 +461,15 @@ class DrivingMap extends Slide {
     } = this.state
 
     const {
+      darkMode,
       lowLevelSpotlightFrac,
       lowLevelSpotlightConfig,
       highLevelSpotlightConfigs,
       stops,
       photoDuration
     } = this.props
+
+    const currentMap = maps[darkMode ? 'darkMode' : 'lightMode']
 
     const eastSpotlight = {
       size: { height: lowLevelSpotlightConfig.size.height, width: lowLevelSpotlightConfig.size.width },
@@ -450,7 +522,7 @@ class DrivingMap extends Slide {
     }
     
     // update spotlight
-    map.setZoom(directionsZoom) // always zoom out before panning
+    currentMap.setZoom(directionsZoom) // always zoom out before panning
     await Bluebird.delay(250)
 
     this.createMapMarkers(spotlightStopIndex)
@@ -458,9 +530,9 @@ class DrivingMap extends Slide {
     this.iteratePhoto(spotlightStopIndex)
     const newPhotoInterval = setInterval(this.iteratePhoto.bind(this), photoDuration*1000)
 
-    map.panTo(newCenter)
+    currentMap.panTo(newCenter)
     await Bluebird.delay(250)
-    map.setZoom(newZoom)
+    currentMap.setZoom(newZoom)
 
     this.setState({
       lowLevelSpotlightState,
@@ -471,9 +543,39 @@ class DrivingMap extends Slide {
   }
 
   async componentDidMount() {
+    const {
+      displayed
+    } = this.props
+    
     await this.createMap()
-    this.show()
+    if (displayed) this.show()
     await this.fetchPhotos()
+  }
+
+  async componentDidUpdate(prevProps) {
+    const {
+      darkMode: prevDarkMode
+    } = prevProps
+
+    const {
+      darkMode: currDarkMode,
+      displayed
+    } = this.props
+
+    const {
+      maps
+    } = this.state
+
+    if (prevDarkMode !== currDarkMode) {
+      this.hide()
+      if ((currDarkMode && !maps.darkMode) || (!currDarkMode && !maps.lightMode)) {
+        await this.createMap()
+      } else {
+        this.createMapMarkers()
+      }
+
+      if (displayed) this.show()
+    }
   }
 
   show() {
@@ -493,10 +595,12 @@ class DrivingMap extends Slide {
 
   hide() {
     const {
-      spotlightInterval
+      spotlightInterval,
+      photoInterval
     } = this.state
 
     clearInterval(spotlightInterval)
+    clearInterval(photoInterval)
   }
 
   content() {
@@ -509,7 +613,8 @@ class DrivingMap extends Slide {
     const {
       title,
       stops,
-      defaultSpotlightConfig
+      defaultSpotlightConfig,
+      darkMode
     } = this.props
 
     const _spotlightConfig = {
@@ -539,7 +644,7 @@ class DrivingMap extends Slide {
           class='driving-map-spotlight-container'
           style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
         >
-          <div class='driving-map-spotlight'>
+          <div className={`driving-map-spotlight ${darkMode ? 'darkMode' : 'lightMode'}`}>
             <div 
               class='driving-map-spotlight-header'
               style={{ height: _spotlightConfig.headerHeight }}
@@ -563,8 +668,15 @@ class DrivingMap extends Slide {
 
     return (
       <div class='slide driving-map-container'>
-        <div id='driving-map'></div>
-        <div class='driving-map-title'>{title}</div>
+        <div 
+          id={MAP_DIV_ID.lightMode} 
+          className={`driving-map ${darkMode ? 'hidden' : ''}`}
+        ></div>
+        <div 
+          id={MAP_DIV_ID.darkMode} 
+          className={`driving-map ${darkMode ? '' : 'hidden'}`}
+        ></div>
+        <div className={`driving-map-title ${darkMode ? 'darkMode' : 'lightMode'}`}>{title}</div>
         {spotlightElement}
       </div>
     )

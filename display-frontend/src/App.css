@@ -138,20 +138,26 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   height: 100%;
   position: relative;
 }
-#driving-map {
+.driving-map {
   min-height: 100%;
   height: 100%;
   width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0
+}
+.driving-map.hidden {
+  top: 100%;
+  left: 100%;
 }
 .driving-map-title {
   position: absolute;
   top: 20px;
   left: 20px;
-  background: white;
   padding: 5px 10px;
   font-size: x-large;
   font-weight: bold;
-  opacity: 0.85
+  opacity: 0.85;
 }
 .driving-map-spotlight-container {
   position: absolute;
@@ -163,7 +169,6 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 }
 .driving-map-spotlight {
   overflow: hidden;
-  background: white;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -323,4 +328,13 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 #explore-livecam-map {
   width: 30%;
   height: 25%;
+}
+
+.darkMode, .darkMode * {
+  color: white;
+  background: black;
+}
+.lightMode, .lightMode * {
+  color: black;
+  background: white;
 }
