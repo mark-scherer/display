@@ -308,29 +308,38 @@ class DrivingMap extends Slide {
         keyboardShortcuts: false
       })
       directionsRenderer.setMap(map)
-      
-      let directionsResult, directionsCenter, directionsZoom
-      if (stops.length >= 2) {
-        directionsResult = await new Promise((resolve, reject) => {
-          directionsService.route({
-            origin: this.formatStop(stops[0], false),
-            destination: this.formatStop(stops[stops.length - 1], false),
-            waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
-            travelMode: google.maps.TravelMode.DRIVING
-          }, (directionsResult, directionsStatus) => {
-            
-            if (directionsStatus === 'OK') {
-              directionsRenderer.setDirections(directionsResult)
-              resolve(directionsResult)
-            }
-            else reject(`error getting directions: ${ directionsStatus }`)
-          })
-        })
 
-        map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
-        directionsCenter = map.getCenter()
-        directionsZoom = map.getZoom()        
-      }
+      // DEBUG: testing without directions to see if sustainable on fire
+      let directionsResult, directionsCenter, directionsZoom
+      // if (stops.length >= 2) {
+      //   directionsResult = await new Promise((resolve, reject) => {
+      //     directionsService.route({
+      //       origin: this.formatStop(stops[0], false),
+      //       destination: this.formatStop(stops[stops.length - 1], false),
+      //       waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
+      //       travelMode: google.maps.TravelMode.DRIVING
+      //     }, (directionsResult, directionsStatus) => {
+            
+      //       if (directionsStatus === 'OK') {
+      //         // DEBUG
+      //         console.log(`got directionsResult: ${JSON.stringify({
+      //           routes: directionsResult.routes.length,
+      //           totalLegs: directionsResult.routes[0].legs.length,
+      //           totalSteps: directionsResult.routes[0].legs.reduce((runningTotal, currentElement) => runningTotal + currentElement.steps.length, 0),
+      //           totalWaypoints: directionsResult.routes[0].legs.reduce((runningTotal, currentElement) => runningTotal + currentElement.via_waypoints.length, 0),
+      //         })}`)
+
+      //         directionsRenderer.setDirections(directionsResult)
+      //         resolve(directionsResult)
+      //       }
+      //       else reject(`error getting directions: ${ directionsStatus }`)
+      //     })
+      //   })
+
+      //   map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
+      //   directionsCenter = map.getCenter()
+      //   directionsZoom = map.getZoom()        
+      // }
 
       maps[mapType] = map
       this.setState({
@@ -360,6 +369,8 @@ class DrivingMap extends Slide {
       stops,
       darkMode
     } = this.props
+
+    if (!directions) return
 
     if (spotlightStopIndex === undefined || spotlightStopIndex === null) spotlightStopIndex = this.state.spotlightStopIndex // if not provided, check current state
 
