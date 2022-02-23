@@ -87,6 +87,7 @@ class DrivingMap extends Slide {
       // temporarily null rendering objects
       google: null,
       maps: {},
+      directionsRenderer: null,
       directions: null, // type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
       markers: null,    // markers[directionsIndex] = type google.maps.Marker <- directionsIndex = stopIndex + 1
       stopPhotos: null, // stopPhotos[stopIndex]: {filename: url}   // where stopIndex is props.stops[stopIndex] <- directionsInde = stopIndex + 1
@@ -278,10 +279,66 @@ class DrivingMap extends Slide {
     ]
   }
 
+  // DEBUG: describes directions before and after downsampling
+  describeDirectionsResult(directionsResult) {
+    const legs = directionsResult.routes[0].legs
+    const steps = legs.map(leg => leg.steps).flat()
+    const pathPoints = steps.map(step => step.path || []).flat()
+    const stepLatLngs = steps.map(step => step.lat_lngs || []).flat()
+    const stepEncodedLatLngsSize = steps.reduce((acc, step) => acc + (step.encoded_lat_lngs ? step.encoded_lat_lngs.length : 0), 0) // step.encoded_lat_lngs is a string
+    const stepPolylinePoints = steps.map(step => step.polyline || []).flat()
+    const stepPolylineSize = stepPolylinePoints.reduce((acc, polylinePoint) => acc + polylinePoint.points.length, 0)
+    const totalDistanceMiles = steps.reduce((acc, step) => acc + step.distance.value, 0) / 1000 * 0.62
+
+    const stringified = JSON.stringify(directionsResult)
+    const sizeInMBytes = new TextEncoder().encode(stringified).length / 1000 / 1000
+    return {
+      routes: directionsResult.routes.length,
+      
+      totalLegs: legs.length,
+      
+      totalSteps: steps.length,
+      avgStepsPerLeg: Math.round(steps.length / legs.length),
+      
+      totalPathPoints: pathPoints.length,
+      totalStepLatLngs: stepLatLngs.length, // this seemed to be deprecated but is probably large (https://developers.google.com/maps/documentation/javascript/reference/directions#DirectionsStep)
+      pathPointsPerLeg: Math.round(pathPoints.length / legs.length),
+      totalDistanceMiles: Math.round(totalDistanceMiles),
+      // milesPerPathPoint: Math.round(totalDistanceMiles / pathPoints.length),
+      pathPointsPerMile: Math.round(pathPoints.length / totalDistanceMiles),
+      stepLatLngsPerMile: Math.round(stepLatLngs.length / totalDistanceMiles), // remember this is deprecated
+      stepEncodedLatLngsSize, 
+      totalStepPolylinePoints: stepPolylinePoints.length, // this seems to be deprecated
+      stepPolylineSize,
+
+      sizeInMBytes: Math.round(sizeInMBytes)
+    }
+  }
+
+  // in place makes mem-saving mods to return of google.maps.DirectionsService.route()
+  prepDirections(directionsResult) {
+    directionsResult.routes.forEach(route => {    // route: DirectionsRoute
+      route.legs.forEach(leg => {                   // leg: DirectionsLeg
+        leg.steps.forEach(step => {                   // step: DirectionsStep
+          // clear deprecated fields
+            // see: https://developers.google.com/maps/documentation/javascript/reference/directions#DirectionsStep
+          step.lat_lngs = null // actually uses step.path
+          step.polyline = null // actually uses step.encoded_lat_lngs
+          step.encoded_lat_lngs = null // doesn't seem to actually use this for our purposes
+          // step.path = null   // doesn't render blue line if this is null
+        })
+      })
+    })
+  }
+
   async createMap() {
-    const {
+    let {
       serverUrl,
-      maps
+      maps,
+      directionsRenderer,
+      directions: directionsResult,
+      directionsCenter,
+      directionsZoom
     } = this.state
     
     const {
@@ -292,7 +349,7 @@ class DrivingMap extends Slide {
     try {
       const google = await loadGoogleMapsLib(serverUrl)
       const directionsService = new google.maps.DirectionsService()
-      const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
+      if (!directionsRenderer) directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
       const mapType = darkMode ? 'darkMode' : 'lightMode'
       const styles = baseMapStyles.concat(mapMods[mapType] || [])
@@ -309,42 +366,38 @@ class DrivingMap extends Slide {
       })
       directionsRenderer.setMap(map)
 
-      // DEBUG: testing without directions to see if sustainable on fire
-      let directionsResult, directionsCenter, directionsZoom
-      // if (stops.length >= 2) {
-      //   directionsResult = await new Promise((resolve, reject) => {
-      //     directionsService.route({
-      //       origin: this.formatStop(stops[0], false),
-      //       destination: this.formatStop(stops[stops.length - 1], false),
-      //       waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
-      //       travelMode: google.maps.TravelMode.DRIVING
-      //     }, (directionsResult, directionsStatus) => {
+      if (!directionsResult && stops.length >= 2) {
+        directionsResult = await new Promise((resolve, reject) => {
+          directionsService.route({
+            origin: this.formatStop(stops[0], false),
+            destination: this.formatStop(stops[stops.length - 1], false),
+            waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
+            travelMode: google.maps.TravelMode.DRIVING
+          }, (directionsResult, directionsStatus) => {
             
-      //       if (directionsStatus === 'OK') {
-      //         // DEBUG
-      //         console.log(`got directionsResult: ${JSON.stringify({
-      //           routes: directionsResult.routes.length,
-      //           totalLegs: directionsResult.routes[0].legs.length,
-      //           totalSteps: directionsResult.routes[0].legs.reduce((runningTotal, currentElement) => runningTotal + currentElement.steps.length, 0),
-      //           totalWaypoints: directionsResult.routes[0].legs.reduce((runningTotal, currentElement) => runningTotal + currentElement.via_waypoints.length, 0),
-      //         })}`)
+            if (directionsStatus === 'OK') {
+              // DEBUG
+              console.log(`got raw directionsResult: ${JSON.stringify(this.describeDirectionsResult(directionsResult))}`)
+              this.prepDirections(directionsResult)
+              console.log(`prepped directionsResult: ${JSON.stringify(this.describeDirectionsResult(directionsResult))}`)
 
-      //         directionsRenderer.setDirections(directionsResult)
-      //         resolve(directionsResult)
-      //       }
-      //       else reject(`error getting directions: ${ directionsStatus }`)
-      //     })
-      //   })
+              directionsRenderer.setDirections(directionsResult)
+              resolve(directionsResult)
+            }
+            else reject(`error getting directions: ${ directionsStatus }`)
+          })
+        })
 
-      //   map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
-      //   directionsCenter = map.getCenter()
-      //   directionsZoom = map.getZoom()        
-      // }
+        map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
+        directionsCenter = map.getCenter()
+        directionsZoom = map.getZoom()        
+      }
 
       maps[mapType] = map
       this.setState({
         google,
         maps,
+        directionsRenderer,
         directions: directionsResult,
         directionsCenter,
         directionsZoom
@@ -574,15 +627,21 @@ class DrivingMap extends Slide {
     } = this.props
 
     const {
-      maps
+      maps,
+      directionsRenderer
     } = this.state
 
+    // darkMode updated
     if (prevDarkMode !== currDarkMode) {
       this.hide()
-      if ((currDarkMode && !maps.darkMode) || (!currDarkMode && !maps.lightMode)) {
+
+      const currMap = currDarkMode ? maps.darkMode : maps.lightMode
+
+      if (!currMap) {
         await this.createMap()
       } else {
         this.createMapMarkers()
+        directionsRenderer.setMap(currMap)
       }
 
       if (displayed) this.show()
