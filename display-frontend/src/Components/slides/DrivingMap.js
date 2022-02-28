@@ -75,6 +75,7 @@ class DrivingMap extends Slide {
   static requiredArgs = [
     'title',
     'stops',
+    'downsample_rate' // should be a fraction (0-1]
   ]
 
   constructor(props) {
@@ -317,6 +318,10 @@ class DrivingMap extends Slide {
 
   // in place makes mem-saving mods to return of google.maps.DirectionsService.route()
   prepDirections(directionsResult) {
+    const {
+      downsample_rate
+    } = this.props
+
     directionsResult.routes.forEach(route => {    // route: DirectionsRoute
       route.legs.forEach(leg => {                   // leg: DirectionsLeg
         leg.steps.forEach(step => {                   // step: DirectionsStep
@@ -326,6 +331,21 @@ class DrivingMap extends Slide {
           step.polyline = null // actually uses step.encoded_lat_lngs
           step.encoded_lat_lngs = null // doesn't seem to actually use this for our purposes
           // step.path = null   // doesn't render blue line if this is null
+
+          // downsample path
+          const downsampled_path = []
+          const downsample_step = Math.round(1/downsample_rate)
+          step.path.forEach((point, index) => {
+            let samplePoint = false
+            
+            // special cases 
+            if (index === 0 || index === step.path.length - 1) samplePoint = true
+
+            if (index % downsample_step === 0) samplePoint = true
+
+            if (samplePoint) downsampled_path.push(point)
+          })
+          step.path = downsampled_path
         })
       })
     })

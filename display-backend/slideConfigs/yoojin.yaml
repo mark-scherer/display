@@ -2,10 +2,8 @@
 ---
 duration: 1000
 darkMode:
-  # start: 22:00
-  start: 23:28
-  # end: 7:00
-  end: 10:00
+  start: 22:00
+  end: 7:00
 slides:
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'
@@ -47,6 +45,7 @@ slides:
       headerHeight: 25px
     spotlightDuration: 30
     photoDuration: 10
+    downsample_rate: 0.001
     stops:
       - location: San Francisco, CA
         labelPosition: 'west'
