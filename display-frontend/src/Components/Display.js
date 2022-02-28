@@ -128,7 +128,7 @@ class Display extends React.Component {
 
     const currentTime = new Date()
     const darkMode = timeDiffInSecs(darkModeStart, darkModeEnd) > 0 ?
-        timeDiffInSecs(currentTime, darkModeStart) <= 0 || timeDiffInSecs(currentTime, darkModeEnd) >= 0 : // start is after end
+        timeDiffInSecs(currentTime, darkModeEnd) <= 0 || timeDiffInSecs(currentTime, darkModeStart) >= 0 : // start is after end
         timeDiffInSecs(currentTime, darkModeStart) >= 0 && timeDiffInSecs(currentTime, darkModeEnd) <= 0 // end is after start
 
     console.log(`switching to ${darkMode ? 'darkMode' : 'lightMode'}: ${JSON.stringify({ 
