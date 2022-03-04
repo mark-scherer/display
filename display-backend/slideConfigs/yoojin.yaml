@@ -7,7 +7,7 @@ darkMode:
 slides:
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'
-    lowLevelSpotlightFrac: 0.5   # percentage of time spent in low level (zoomed in) spotlights, rest spent in high level (zoomed out) spotlights
+    lowLevelSpotlightFrac: 0.5
     lowLevelSpotlightConfig:
       zoom: 7
       size:
@@ -45,7 +45,8 @@ slides:
       headerHeight: 25px
     spotlightDuration: 30
     photoDuration: 10
-    downsample_rate: 0.001
+    downsampleRate: 0.001
+    mapType: ROADMAP
     stops:
       - location: San Francisco, CA
         labelPosition: 'west'

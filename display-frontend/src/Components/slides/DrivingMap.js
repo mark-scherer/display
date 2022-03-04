@@ -30,6 +30,27 @@ const baseMapStyles = [
     stylers: [
       { 'visibility': 'off'}
     ]
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'labels',
+    stylers: [
+      { 'visibility': 'off' }
+    ]
+  },
+  {
+    featureType: 'road.local',
+    elementType: 'all',
+    stylers: [
+      { 'visibility': 'off' }
+    ]
+  },
+  {
+    featureType: 'road.arterial',
+    elementType: 'all',
+    stylers: [
+      { 'visibility': 'off' }
+    ]
   }
 ]
 
@@ -55,13 +76,6 @@ const mapMods = {
       stylers: [
         { 'lightness': -50 }
       ]
-    },
-    {
-      featureType: 'road.highway',
-      elementType: 'labels',
-      stylers: [
-        { 'visibility': 'off' }
-      ]
     }
   ]
 }
@@ -75,7 +89,8 @@ class DrivingMap extends Slide {
   static requiredArgs = [
     'title',
     'stops',
-    'downsample_rate' // should be a fraction (0-1]
+    'downsampleRate', // should be a fraction (0-1]
+    'mapType'
   ]
 
   constructor(props) {
@@ -319,7 +334,7 @@ class DrivingMap extends Slide {
   // in place makes mem-saving mods to return of google.maps.DirectionsService.route()
   prepDirections(directionsResult) {
     const {
-      downsample_rate
+      downsampleRate
     } = this.props
 
     directionsResult.routes.forEach(route => {    // route: DirectionsRoute
@@ -334,7 +349,7 @@ class DrivingMap extends Slide {
 
           // downsample path
           const downsampled_path = []
-          const downsample_step = Math.round(1/downsample_rate)
+          const downsample_step = Math.round(1/downsampleRate)
           step.path.forEach((point, index) => {
             let samplePoint = false
             
@@ -363,7 +378,8 @@ class DrivingMap extends Slide {
     
     const {
       stops,
-      darkMode
+      darkMode,
+      mapType
     } = this.props
 
     try {
@@ -371,14 +387,14 @@ class DrivingMap extends Slide {
       const directionsService = new google.maps.DirectionsService()
       if (!directionsRenderer) directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
-      const mapType = darkMode ? 'darkMode' : 'lightMode'
-      const styles = baseMapStyles.concat(mapMods[mapType] || [])
-      const mapElementId = darkMode ? MAP_DIV_ID[mapType] : MAP_DIV_ID[mapType]
+      const mapDisplayMode = darkMode ? 'darkMode' : 'lightMode'
+      const styles = baseMapStyles.concat(mapMods[mapDisplayMode] || [])
+      const mapElementId = darkMode ? MAP_DIV_ID[mapDisplayMode] : MAP_DIV_ID[mapDisplayMode]
       
       const map = new google.maps.Map(document.getElementById(mapElementId), {
         center: { lat: 37.77, lng: -122.39 },
         zoom: 8,
-        mapTypeId: google.maps.MapTypeId.TERRAIN,
+        mapTypeId: google.maps.MapTypeId[mapType],
         styles,
         backgroundColor: darkMode ? 'black' : 'white',
         disableDefaultUI: true,
@@ -413,7 +429,7 @@ class DrivingMap extends Slide {
         directionsZoom = map.getZoom()        
       }
 
-      maps[mapType] = map
+      maps[mapDisplayMode] = map
       this.setState({
         google,
         maps,
