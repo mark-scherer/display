@@ -189,7 +189,7 @@ class Display extends React.Component {
     }
     
     // validate config
-    if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: duration`)
+    if (config.duration === null || config.duration === undefined) throw Error(`config ${configName} missing required field: duration`)
     if (config.slides === null || config.slides === undefined) throw Error(`config ${configName} missing required field: slides`)
     if (!config.slides.length) throw Error(`config ${configName} has no slides`)
     config.slides.forEach((slideConfig, index) => {

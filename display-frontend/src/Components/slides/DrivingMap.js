@@ -8,7 +8,11 @@ import { randomElement, loadGoogleMapsLib } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js'
 
-// see https://developers.google.com/maps/documentation/javascript/style-reference
+/*
+  stylers to adjust google maps appearance
+
+  for docs see: https://developers.google.com/maps/documentation/javascript/style-reference
+*/
 const baseMapStyles = [
   {
     featureType: 'administrative',
@@ -32,28 +36,24 @@ const baseMapStyles = [
     ]
   },
   {
-    featureType: 'road.highway',
+    featureType: 'road',
+    elementType: 'all',
+    stylers: [
+      { 'visibility': 'simplified' }
+    ]
+  },
+  {
+    featureType: 'road',
     elementType: 'labels',
     stylers: [
       { 'visibility': 'off' }
     ]
   },
-  {
-    featureType: 'road.local',
-    elementType: 'all',
-    stylers: [
-      { 'visibility': 'off' }
-    ]
-  },
-  {
-    featureType: 'road.arterial',
-    elementType: 'all',
-    stylers: [
-      { 'visibility': 'off' }
-    ]
-  }
 ]
 
+/*
+  mods for specific 1) mapDisplayMode or 2) mapType (not implemented!)
+*/
 const mapMods = {
   darkMode: [
     {
@@ -80,12 +80,19 @@ const mapMods = {
   ]
 }
 
+// need to hardcode ids of the map elements we'll create
 const MAP_DIV_ID = {
   lightMode: 'driving-map-light',
   darkMode: 'driving-map-dark',
 }
 
+/*
+  slide to display map background, optionally with:
+    1. overlaid google maps directions with custom stop markers
+    2. rotating image highlights for each 
+*/
 class DrivingMap extends Slide {
+  
   static requiredArgs = [
     'title',
     'stops',
