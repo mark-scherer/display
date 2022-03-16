@@ -1,13 +1,22 @@
 # slide config for dev
 ---
+
+# options for all slides
 duration: 1000
 darkMode:
   start: 22:00
   end: 7:00
+
 slides:
+
   - type: DrivingMap
     title: 'Mark & Yoojin Summer 2021!'
+
+    # spotlight options
+    spotlightDuration: 30
+    photoDuration: 10
     lowLevelSpotlightFrac: 0.5
+
     lowLevelSpotlightConfig:
       zoom: 7
       size:
@@ -21,6 +30,7 @@ slides:
         bottom: 10px
         left: 20px
         right: 50px 
+
     highLevelSpotlightConfigs:
       - mapOffset:
           lat: 3
@@ -40,14 +50,17 @@ slides:
         margin:
           bottom: 20px
           left: 20px
-    defaultSpotlightConfig:   # applies to all spotlights if not overriden
+
+    defaultSpotlightConfig:
       padding: 5px
       headerHeight: 25px
-    spotlightDuration: 30
-    photoDuration: 10
-    downsampleRate: 0.001
+
+    # some map options
     mapType: ROADMAP
+    downsampleRate: 0.001
+
     stops:
+
       - location: San Francisco, CA
         labelPosition: 'west'
         labelText: 'Start: 8/6'
@@ -58,8 +71,6 @@ slides:
         labelPosition: 'northwest'
         startDate: 8/6
         type: minor
-        # photosBucket: display-photos
-        # photosDir: test
       - location: Winnemucca, NV
         locationText: Winnemucca
         labelPosition: 'north'
@@ -72,6 +83,7 @@ slides:
         type: minor
         photosBucket: display-photos
         photosDir: slc
+
       - location: Denver, CO
         locationText: Denver
         labelPosition: 'northeast'
@@ -93,6 +105,7 @@ slides:
         startDate: 8/29
         type: minor
         labelMarkerMargin: 12
+      
       - location: Prospect, KY
         locationText: Louisville
         labelPosition: 'east'
@@ -102,6 +115,7 @@ slides:
         labelMarkerMargin: 10
         photosBucket: display-photos
         photosDir: louisville
+      
       - location: Nashville, TN
         locationText: Nashville
         labelPosition: 'east'
@@ -124,6 +138,7 @@ slides:
         type: minor
         photosBucket: display-photos
         photosDir: waco
+      
       - location: Austin, TX
         locationText: Austin
         labelPosition: 'south'
@@ -139,6 +154,7 @@ slides:
         type: minor
         photosBucket: display-photos
         photosDir: whiteSands
+      
       - location: Flagstaff, AZ ## flagstaff repeated for proper routing
         locationText: Flagstaff
         labelPosition: 'northeast'
@@ -185,6 +201,7 @@ slides:
         type: minor
         photosBucket: display-photos
         photosDir: algodonesDunes
+      
       - location: San Diego, CA
         locationText: San Diego
         labelPosition: 'southwest'
@@ -200,6 +217,7 @@ slides:
         type: minor
         photosBucket: display-photos
         photosDir: la
+      
       - location: Arroyo Grande, CA
         locationText: Arroyo Grande
         labelPosition: 'west'
@@ -208,6 +226,7 @@ slides:
         endDate: 10/22
         photosBucket: display-photos
         photosDir: arroyoGrande
+      
       - location: San Francisco, CA
         labelPosition: 'east'
         labelText: 'End: 10/22'
