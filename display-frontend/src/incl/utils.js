@@ -42,6 +42,19 @@ const weightedRandomElement = function(list, weights) {
   return list[pickedIndex]
 }
 
+const chunk = function(list, chunkSize, repeatSplitElements=false) {
+  let result = []
+  let chunkStart = 0
+  while (chunkStart < list.length) {
+    if (repeatSplitElements && chunkStart > 0) chunkStart -= 1
+    
+    result.push(list.slice(chunkStart, chunkStart + chunkSize))
+    chunkStart += chunkSize
+  }
+
+  return result
+}
+
 /* 
   returns datetime converted to timezone formated with formatOptions
   - for formatOptions docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat
@@ -116,6 +129,7 @@ export {
   randomIndex,
   randomElement,
   weightedRandomElement,
+  chunk,
 
   convertTime,
   roundTime,

@@ -4,9 +4,11 @@
 
 import React from 'react';
 import { Promise as Bluebird } from 'bluebird'
-import { randomElement, loadGoogleMapsLib } from '../../incl/utils.js'
+import { randomElement, loadGoogleMapsLib, chunk } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js'
+
+const WAYPOINTS_PER_DIRECTION_SEGMENT = 25 // if given more will split into multiple individial directions
 
 /*
   stylers to adjust google maps appearance
@@ -103,6 +105,10 @@ class DrivingMap extends Slide {
   constructor(props) {
     super(props)
 
+    const {
+      stops
+    } = this.props
+
     this.state = {
       // include state partially set in base Slide ctor
       ...this.state,
@@ -110,14 +116,15 @@ class DrivingMap extends Slide {
       // temporarily null rendering objects
       google: null,
       maps: {},
-      directionsRenderer: null,
-      directions: null, // type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
+      directionsRenderers: [],
+      directionsResults: [], // each of type google.maps.DirectionsResult, probably always want directions.routes[0] (type google.maps.DirectionsRoute)
       markers: null,    // markers[directionsIndex] = type google.maps.Marker <- directionsIndex = stopIndex + 1
       stopPhotos: null, // stopPhotos[stopIndex]: {filename: url}   // where stopIndex is props.stops[stopIndex] <- directionsInde = stopIndex + 1
       spotlightInterval: null,
       photoInterval: null,
 
       // rendering state variables
+      _stops: JSON.parse(JSON.stringify(stops)), // we need to add a few fields
       directionsCenter: null,
       directionsZoom: null,
       lowLevelSpotlightState: false, // currently zoomed in or zoomed out spotlight? Always start with zoomed out
@@ -156,7 +163,7 @@ class DrivingMap extends Slide {
       - type: major or minor, controls marker styling
       - labelMarkerMargin: overwrite margin between pointMarker and labelMarker, useful for spacing out labels
   */
-  formatMarkerOptions(stopConfig, position, index, options, google) {
+  formatMarkerOptions(stopConfig, index, options, google) {
     const {
       spotlight,
       darkMode
@@ -232,7 +239,7 @@ class DrivingMap extends Slide {
         ` - ${stopConfig.endDate}` : '') + ': '
       : ''
     // const labelText = stopConfig.labelText || `${dateText}${stopConfig.locationText || stopConfig.location}`
-    const labelText = stopConfig.labelText || stopConfig.locationText || stopConfig.location
+    const labelText = stopConfig.labelText || stopConfig.locationText || stopConfig.location.split(',')[0]
 
     // total width, height of drawn svg in context of icon.path, icon.anchor
     const width = Math.max(typeConfig.MIN_LABEL_WIDTH, labelText.length*typeConfig.LABEL_PX_PER_CHAR) // jank but rough approximation of needed marker width
@@ -267,7 +274,7 @@ class DrivingMap extends Slide {
     return [
       // labelMarker
       {
-        position,
+        position: stopConfig.position,
         icon: {
           path: labelMarkerPath,
           anchor: labelMarkerAnchor,
@@ -288,7 +295,7 @@ class DrivingMap extends Slide {
 
       // pointMarker
       {
-        position,
+        position: stopConfig.position,
         icon: {
           path: pointMarkerPath,
           fillColor: spotlightConfig.fillColor,
@@ -377,14 +384,14 @@ class DrivingMap extends Slide {
     let {
       serverUrl,
       maps,
-      directionsRenderer,
-      directions: directionsResult,
+      directionsRenderers,
+      directionsResults,
+      _stops,
       directionsCenter,
       directionsZoom
     } = this.state
     
     const {
-      stops,
       darkMode,
       mapType
     } = this.props
@@ -392,7 +399,6 @@ class DrivingMap extends Slide {
     try {
       const google = await loadGoogleMapsLib(serverUrl)
       const directionsService = new google.maps.DirectionsService()
-      if (!directionsRenderer) directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true }) // need to create individual markers ourselves
 
       const mapDisplayMode = darkMode ? 'darkMode' : 'lightMode'
       const styles = baseMapStyles.concat(mapMods[mapDisplayMode] || [])
@@ -400,53 +406,87 @@ class DrivingMap extends Slide {
       
       const map = new google.maps.Map(document.getElementById(mapElementId), {
         center: { lat: 37.77, lng: -122.39 },
-        zoom: 8,
+        // zoom: 8,
+        zoom: 11,
         mapTypeId: google.maps.MapTypeId[mapType],
         styles,
         backgroundColor: darkMode ? 'black' : 'white',
         disableDefaultUI: true,
         keyboardShortcuts: false
       })
-      directionsRenderer.setMap(map)
 
-      if (!directionsResult && stops.length >= 2) {
-        directionsResult = await new Promise((resolve, reject) => {
-          directionsService.route({
-            origin: this.formatStop(stops[0], false),
-            destination: this.formatStop(stops[stops.length - 1], false),
-            waypoints: stops.slice(1, stops.length - 1).map(stopConfig => this.formatStop(stopConfig)),
-            travelMode: google.maps.TravelMode.DRIVING
-          }, (directionsResult, directionsStatus) => {
-            
-            if (directionsStatus === 'OK') {
-              // DEBUG
-              console.log(`got raw directionsResult: ${JSON.stringify(this.describeDirectionsResult(directionsResult))}`)
-              this.prepDirections(directionsResult)
-              console.log(`prepped directionsResult: ${JSON.stringify(this.describeDirectionsResult(directionsResult))}`)
+      if (!directionsResults.length && _stops.length >= 2) {
+        const stopSegments = chunk(_stops, WAYPOINTS_PER_DIRECTION_SEGMENT, true) // note retuns shallow copies
 
-              directionsRenderer.setDirections(directionsResult)
-              resolve(directionsResult)
-            }
-            else reject(`error getting directions: ${ directionsStatus }`)
+        let stopLatLngs = {} // store stop lat/lng to allow marker creation... need to key by index b/c order is not preserved
+        await Bluebird.map(stopSegments, async (stopsSeg, directionsIndex) => {
+          const segmentDirectionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, preserveViewport: true }) // need to create individual markers ourselves
+          await new Promise((resolve, reject) => {
+            const originStop = stopsSeg[0]
+            const destinationStop = stopsSeg[stopsSeg.length - 1]
+            const waypointStops = stopsSeg.slice(1, stopsSeg.length - 1)
+
+            directionsService.route({
+              origin: this.formatStop(originStop, false),
+              destination: this.formatStop(destinationStop, false),
+              waypoints: waypointStops.map(stopConfig => this.formatStop(stopConfig)),
+              travelMode: google.maps.TravelMode.DRIVING
+            }, (segmentDirectionsResult, segmentDirectionsStatus) => {
+              
+              if (segmentDirectionsStatus === 'OK') {
+                // DEBUG
+                console.log(`got raw segmentDirectionsResult: ${JSON.stringify(this.describeDirectionsResult(segmentDirectionsResult))}`)
+                this.prepDirections(segmentDirectionsResult)
+                console.log(`prepped segmentDirectionsResult: ${JSON.stringify(this.describeDirectionsResult(segmentDirectionsResult))}`)
+
+                const legs = segmentDirectionsResult.routes[0].legs
+                const stopIndexOffset =  directionsIndex * WAYPOINTS_PER_DIRECTION_SEGMENT
+                if (directionsIndex === 0) {
+                  stopLatLngs[stopIndexOffset] = legs[0].start_location
+                  legs.forEach((l, legIndex) => stopLatLngs[legIndex + stopIndexOffset + 1] = l.end_location)
+                } else {
+                  legs.forEach((l, legIndex) => stopLatLngs[legIndex + stopIndexOffset] = l.end_location)
+                }
+  
+                segmentDirectionsRenderer.setDirections(segmentDirectionsResult)
+                directionsRenderers.push(segmentDirectionsRenderer)
+                directionsResults.push(segmentDirectionsResult)
+                resolve()
+              }
+              else reject(`error getting directions segment ${directionsIndex}: ${ segmentDirectionsStatus }`)
+            })
           })
         })
 
-        map.fitBounds(directionsResult.routes[0].bounds) // need to explicity call to update map properties
+        _stops.forEach((s, stopIndex) => {s.position = stopLatLngs[stopIndex.toString()]})
+
+        let bounds = new google.maps.LatLngBounds()
+        directionsResults.forEach(segmentDirectionsResults => {
+          bounds = bounds.union(segmentDirectionsResults.routes[0].bounds)
+        })
+
+        directionsRenderers.forEach(segmentDirectionsRenderer => segmentDirectionsRenderer.setMap(map))
+        map.fitBounds(bounds)
         directionsCenter = map.getCenter()
-        directionsZoom = map.getZoom()        
+        directionsZoom = map.getZoom()
       }
 
       maps[mapDisplayMode] = map
       this.setState({
         google,
         maps,
-        directionsRenderer,
-        directions: directionsResult,
+        directionsRenderers,
+        directionsResults,
+        _stops,
         directionsCenter,
         directionsZoom
       })
 
-      this.createMapMarkers()
+      try {
+        this.createMapMarkers()
+      } catch (error) {
+        throw Error(`error creating map markers: ${error}`)
+      }
     } catch(error) {
       throw Error(`${this.constructor.name} ctor: error creating google map: ${error}`)
     }
@@ -457,48 +497,34 @@ class DrivingMap extends Slide {
     const {
       google,
       maps,
-      directions,
+      directionsResults,
+      _stops,
       markers: oldMarkers
     } = this.state
 
     const {
-      stops,
       darkMode
     } = this.props
 
-    if (!directions) return
+    if (!directionsResults.length) return
 
     if (spotlightStopIndex === undefined || spotlightStopIndex === null) spotlightStopIndex = this.state.spotlightStopIndex // if not provided, check current state
 
     const currentMap = maps[darkMode ? 'darkMode' : 'lightMode']
 
     let newMarkers = []
-    directions.routes[0].legs.forEach((directionsLeg, directionsIndex) => {
-      const stopIndex = directionsIndex + 1
+    _stops.forEach((s, stopIndex) => {
       try {
-        // special case to add origin marker
-        if (directionsIndex === 0) {
-          const originOptions = {
-            spotlight: spotlightStopIndex === 0,
-            darkMode
-          }
-          this.formatMarkerOptions(stops[0], directionsLeg.start_location, 0, originOptions, google).forEach(markerOptions => {
-            const originMarker = new google.maps.Marker(markerOptions)
-            originMarker.setMap(currentMap)
-            newMarkers.push(originMarker)
-          })    
-        }
-
         const options = {
           spotlight: spotlightStopIndex === stopIndex,
           darkMode
         }
-        this.formatMarkerOptions(stops[stopIndex], directionsLeg.end_location, stopIndex, options, google).forEach(markerOptions => {
+        this.formatMarkerOptions(s, stopIndex, options, google).forEach(markerOptions => {
           const marker = new google.maps.Marker(markerOptions)
           marker.setMap(currentMap)
           newMarkers.push(marker)
         })
-      } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), directionsLeg, directionsIndex, stopIndex })}`)}
+      } catch (error) {throw Error(`error creating map markers: ${JSON.stringify({ error: String(error), stopIndex })}`)}
     })
 
     // remove old markers
@@ -507,26 +533,17 @@ class DrivingMap extends Slide {
     this.setState({
       markers: newMarkers
     })
-
-    // console.log(`createMarkers(): created markers: ${JSON.stringify({ markers: newMarkers.map(marker => {
-    //   return {
-    //     title: marker.getTitle(),
-    //     position: marker.getPosition()
-    //   }
-    // }) })}`)
   }
 
   async fetchPhotos() {
     const {
       serverUrl,
+      _stops
     } = this.state
     
-    const {
-      stops
-    } = this.props
 
     let stopPhotos = {}
-    await Bluebird.map(stops, async (stopConfig, stopIndex) => {
+    await Bluebird.map(_stops, async (stopConfig, stopIndex) => {
       if (stopConfig.photosBucket && stopConfig.photosDir) {
         stopPhotos[stopIndex] = (await fetch(`${serverUrl}/storage/${stopConfig.photosBucket}/${stopConfig.photosDir}`).then(response => response.json())).files
       }
@@ -545,7 +562,7 @@ class DrivingMap extends Slide {
 
     if (spotlightStopIndex === null || spotlightStopIndex === undefined) spotlightStopIndex = this.state.spotlightStopIndex
 
-    if (stopPhotos && (spotlightStopIndex !== null && spotlightStopIndex !== undefined)) {
+    if (stopPhotos && Object.keys(stopPhotos).length > 0 && (spotlightStopIndex !== null && spotlightStopIndex !== undefined)) {
       const spotlightPhotos = stopPhotos[String(spotlightStopIndex)]
       const spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
 
@@ -559,7 +576,8 @@ class DrivingMap extends Slide {
     const {
       google,
       maps,
-      directions,
+      directionsResults,
+      _stops,
       directionsCenter,
       directionsZoom,
       markers,
@@ -572,20 +590,20 @@ class DrivingMap extends Slide {
       lowLevelSpotlightFrac,
       lowLevelSpotlightConfig,
       highLevelSpotlightConfigs,
-      stops,
       photoDuration
     } = this.props
 
     const currentMap = maps[darkMode ? 'darkMode' : 'lightMode']
 
+    const lowLevelLngOffset = lowLevelSpotlightConfig.mapOffset && lowLevelSpotlightConfig.mapOffset.lng ? lowLevelSpotlightConfig.mapOffset.lng : 0
     const eastSpotlight = {
       size: { height: lowLevelSpotlightConfig.size.height, width: lowLevelSpotlightConfig.size.width },
-      offset:  { lat: 0, lng: -1*lowLevelSpotlightConfig.mapOffset.lng },
+      offset:  { lat: 0, lng: -1*lowLevelLngOffset },
       margin: { top: lowLevelSpotlightConfig.margin.top, bottom: lowLevelSpotlightConfig.margin.bottom, left: lowLevelSpotlightConfig.margin.left }
     }
     const westSpotlight = {
       size: { height: lowLevelSpotlightConfig.size.height, width: lowLevelSpotlightConfig.size.width },
-      offset:  { lat: 0, lng: 1*lowLevelSpotlightConfig.mapOffset.lng },
+      offset:  { lat: 0, lng: 1*lowLevelLngOffset },
       margin: { top: lowLevelSpotlightConfig.margin.top, bottom: lowLevelSpotlightConfig.margin.bottom, right: lowLevelSpotlightConfig.margin.right }
     }
 
@@ -601,7 +619,8 @@ class DrivingMap extends Slide {
     }
 
     // check if ready for spotlights
-    if (!directions || !markers || !stopPhotos) return
+    if (!directionsResults.length || !markers || !stopPhotos || Object.keys(stopPhotos).length === 0) return
+    console.log(`continuing with iterateSpotlight: ${JSON.stringify({stopPhotos})}`)
 
     // pick params for new spotlight
     const spotlightStopIndex = parseInt(randomElement(Object.keys(stopPhotos)))
@@ -611,9 +630,9 @@ class DrivingMap extends Slide {
 
     let spotlightConfig, newCenter, newZoom
     if (lowLevelSpotlightState) {
-      const spotlightPosition = stops[spotlightStopIndex].labelPosition
+      const spotlightPosition = _stops[spotlightStopIndex].labelPosition
       const spotlightProps = lowLevelSpotlightProps[spotlightPosition]
-      const nominalCenter = directions.routes[0].legs[spotlightStopIndex - 1].end_location
+      const nominalCenter = directionsResults[0].routes[0].legs[spotlightStopIndex - 1].end_location // TODO: fix this
       newCenter = new google.maps.LatLng(nominalCenter.lat() + spotlightProps.offset.lat, nominalCenter.lng() + spotlightProps.offset.lng)
       newZoom = lowLevelSpotlightConfig.zoom
       spotlightConfig = {
@@ -671,7 +690,7 @@ class DrivingMap extends Slide {
 
     const {
       maps,
-      directionsRenderer
+      directionsRenderers
     } = this.state
 
     // darkMode updated
@@ -684,7 +703,7 @@ class DrivingMap extends Slide {
         await this.createMap()
       } else {
         this.createMapMarkers()
-        directionsRenderer.setMap(currMap)
+        directionsRenderers.forEach(segmentDirectionsRenderer => segmentDirectionsRenderer.setMap(currMap))
       }
 
       if (displayed) this.show()
@@ -720,12 +739,12 @@ class DrivingMap extends Slide {
     const {
       spotlightStopIndex,
       spotlightConfig,
-      spotlightPhotoUrl
+      spotlightPhotoUrl,
+      _stops
     } = this.state
 
     const {
       title,
-      stops,
       defaultSpotlightConfig,
       darkMode
     } = this.props
@@ -762,7 +781,7 @@ class DrivingMap extends Slide {
               class='driving-map-spotlight-header'
               style={{ height: _spotlightConfig.headerHeight }}
             >
-              {stops[spotlightStopIndex].locationText}
+              {_stops[spotlightStopIndex].locationText}
             </div>
             <div 
               class='driving-map-spotlight-carousel'
