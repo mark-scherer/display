@@ -563,7 +563,7 @@ class DrivingMap extends Slide {
 
   iteratePhoto(spotlightStopIndex) {
     const {
-      stopPhotos
+      stopPhotos,
     } = this.state
 
     if (spotlightStopIndex === null || spotlightStopIndex === undefined) spotlightStopIndex = this.state.spotlightStopIndex
@@ -572,7 +572,8 @@ class DrivingMap extends Slide {
     let spotlightPhotoUrl = null
     if (stopPhotos && Object.keys(stopPhotos).length > 0 && (spotlightStopIndex !== null && spotlightStopIndex !== undefined)) {
       const spotlightPhotos = stopPhotos[String(spotlightStopIndex)]
-      spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
+      // console.log(`iterating photo: ${JSON.stringify({ stopPhotos, spotlightStopIndex, _stops, stopsLength: _stops.length })}`)
+      if (spotlightPhotos) spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
     }
     
     this.setState({
