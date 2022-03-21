@@ -177,8 +177,13 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
 }
 .driving-map-spotlight-header {
   font-size: large;
+  padding: 5px 5px 0;
+}
+.driving-map-spotlight-title {
   font-weight: bold;
-  padding-top: 5px;
+}
+.driving-map-spotlight-media {
+  font-size: medium;
 }
 
 .sunmap-timebox {

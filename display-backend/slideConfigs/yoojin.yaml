@@ -16,6 +16,7 @@ slides:
     spotlightDuration: 30
     photoDuration: 10
     lowLevelSpotlightFrac: 0.5
+    onlySpotlightPhotos: true
 
     lowLevelSpotlightConfig:
       zoom: 7
@@ -53,7 +54,7 @@ slides:
 
     defaultSpotlightConfig:
       padding: 5px
-      headerHeight: 25px
+      headerHeight: 40px
 
     # some map options
     mapType: ROADMAP
@@ -69,17 +70,17 @@ slides:
       - location: Truckee, CA
         locationText: Truckee
         labelPosition: 'northwest'
-        startDate: 8/6
+        startDate: 8/6/21
         type: minor
       - location: Winnemucca, NV
         locationText: Winnemucca
         labelPosition: 'north'
-        startDate: 8/6
+        startDate: 8/6/21
         type: minor
       - location: Salt Lake City, UT
         locationText: SLC
         labelPosition: 'south'
-        startDate: 8/7
+        startDate: 8/7/21
         type: minor
         photosBucket: display-photos
         photosDir: slc
@@ -87,30 +88,30 @@ slides:
       - location: Denver, CO
         locationText: Denver
         labelPosition: 'northeast'
-        startDate: 8/8
-        endDate: 8/28
+        startDate: 8/8/21
+        endDate: 8/28/21
         type: major
         photosBucket: display-photos
         photosDir: denver
       - location: Kuttawa, KY
         locationText: Kuttawa
         labelPosition: 'southwest'
-        startDate: 8/28
+        startDate: 8/28/21
         type: minor
         photosBucket: display-photos
         photosDir: kuttawa
       - location: Henderson, KY
         locationText: Henderson
         labelPosition: 'north'
-        startDate: 8/29
+        startDate: 8/29/21
         type: minor
         labelMarkerMargin: 12
       
       - location: Prospect, KY
         locationText: Louisville
         labelPosition: 'east'
-        startDate: 8/29
-        endDate: 9/3
+        startDate: 8/29/21
+        endDate: 9/3/21
         type: major
         labelMarkerMargin: 10
         photosBucket: display-photos
@@ -119,22 +120,22 @@ slides:
       - location: Nashville, TN
         locationText: Nashville
         labelPosition: 'east'
-        startDate: 9/3
-        endDate: 9/11
+        startDate: 9/3/21
+        endDate: 9/11/21
         type: major
         photosBucket: display-photos
         photosDir: nashville
       - location: Dallas, TX
         locationText: Dallas
         labelPosition: 'northwest'
-        startDate: 9/11
+        startDate: 9/11/21
         type: minor
         photosBucket: display-photos
         photosDir: dallas
       - location: Waco, TX
         locationText: Waco
         labelPosition: 'east'
-        startDate: 9/12
+        startDate: 9/12/21
         type: minor
         photosBucket: display-photos
         photosDir: waco
@@ -142,15 +143,15 @@ slides:
       - location: Austin, TX
         locationText: Austin
         labelPosition: 'south'
-        startDate: 9/12
-        endDate: 10/2
+        startDate: 9/12/21
+        endDate: 10/2/21
         type: major
         photosBucket: display-photos
         photosDir: austin
       - location: White Sands, NM
         locationText: White Sands NP
         labelPosition: 'east'
-        startDate: 10/2
+        startDate: 10/2/21
         type: minor
         photosBucket: display-photos
         photosDir: whiteSands
@@ -163,21 +164,21 @@ slides:
       - location: Horseshoe Bend, AZ
         locationText: Horseshoe Bend
         labelPosition: 'north'
-        startDate: 10/5
+        startDate: 10/5/21
         type: minor
         photosBucket: display-photos
         photosDir: horseshoeBend
       - location: Flagstaff, AZ
         locationText: Flagstaff
         labelPosition: 'northeast'
-        startDate: 10/3
-        endDate: 10/8
+        startDate: 10/3/21
+        endDate: 10/8/21
         type: major
         labelMarkerMargin: 6
       - location: Sedona, AZ
         locationText: Sedona
         labelPosition: 'west'
-        startDate: 10/3
+        startDate: 10/3/21
         type: minor
         photosBucket: display-photos
         photosDir: sedona
@@ -185,19 +186,19 @@ slides:
       - location: Grand Canyon South Rim Park Headquarters
         locationText: Grand Canyon NP
         labelPosition: 'west'
-        startDate: 10/8
+        startDate: 10/8/21
         type: minor
         photosBucket: display-photos
         photosDir: grandCanyon
       - location: Phoenix, AZ
         locationText: Phonenix
         labelPosition: 'east'
-        startDate: 10/8
+        startDate: 10/8/21
         type: minor
       - location: Dune Buggy Flats, CA
         locationText: Algodones Dunes
         labelPosition: 'southeast'
-        startDate: 10/9
+        startDate: 10/9/21
         type: minor
         photosBucket: display-photos
         photosDir: algodonesDunes
@@ -205,15 +206,15 @@ slides:
       - location: San Diego, CA
         locationText: San Diego
         labelPosition: 'southwest'
-        startDate: 10/9
-        endDate: 10/16
+        startDate: 10/9/21
+        endDate: 10/16/21
         type: major
         photosBucket: display-photos
         photosDir: sanDiego
       - location: Los Angeles, CA
         locationText: Los Angeles
         labelPosition: 'southwest'
-        startDate: 10/10
+        startDate: 10/10/21
         type: minor
         photosBucket: display-photos
         photosDir: la
@@ -221,9 +222,9 @@ slides:
       - location: Arroyo Grande, CA
         locationText: Arroyo Grande
         labelPosition: 'west'
-        startDate: 10/17
+        startDate: 10/17/21
         type: major
-        endDate: 10/22
+        endDate: 10/22/21
         photosBucket: display-photos
         photosDir: arroyoGrande
       

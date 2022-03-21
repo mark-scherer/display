@@ -1,5 +1,5 @@
 /*
-  Slide to display basic text message
+  Slide to display google maps driving directions and optionally highlight specific stops
 */
 
 import React from 'react';
@@ -415,6 +415,7 @@ class DrivingMap extends Slide {
         keyboardShortcuts: false
       })
 
+      // create directions if not already made
       if (!directionsResults.length && _stops.length >= 2) {
         const stopSegments = chunk(_stops, WAYPOINTS_PER_DIRECTION_SEGMENT, true) // note retuns shallow copies
 
@@ -469,6 +470,11 @@ class DrivingMap extends Slide {
         map.fitBounds(bounds)
         directionsCenter = map.getCenter()
         directionsZoom = map.getZoom()
+      } else {
+        // or just move existing directions to this new map
+        directionsRenderers.forEach(segmentDirectionsRenderer => segmentDirectionsRenderer.setMap(map))
+        map.setCenter(directionsCenter)
+        map.setZoom(directionsZoom)
       }
 
       maps[mapDisplayMode] = map
@@ -562,14 +568,16 @@ class DrivingMap extends Slide {
 
     if (spotlightStopIndex === null || spotlightStopIndex === undefined) spotlightStopIndex = this.state.spotlightStopIndex
 
+    // not all stops have photos
+    let spotlightPhotoUrl = null
     if (stopPhotos && Object.keys(stopPhotos).length > 0 && (spotlightStopIndex !== null && spotlightStopIndex !== undefined)) {
       const spotlightPhotos = stopPhotos[String(spotlightStopIndex)]
-      const spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
-
-      this.setState({
-        spotlightPhotoUrl
-      })
+      spotlightPhotoUrl = spotlightPhotos[randomElement(Object.keys(spotlightPhotos))]
     }
+    
+    this.setState({
+      spotlightPhotoUrl
+    })
   }
 
   async iterateSpotlight() {
@@ -587,6 +595,7 @@ class DrivingMap extends Slide {
 
     const {
       darkMode,
+      onlySpotlightPhotos,
       lowLevelSpotlightFrac,
       lowLevelSpotlightConfig,
       highLevelSpotlightConfigs,
@@ -618,29 +627,33 @@ class DrivingMap extends Slide {
       northwest: westSpotlight
     }
 
-    // check if ready for spotlights
-    if (!directionsResults.length || !markers || !stopPhotos || Object.keys(stopPhotos).length === 0) return
+    // check if should display spotlight
+    if (
+      !directionsResults.length || !markers ||
+      (onlySpotlightPhotos && (!stopPhotos || Object.keys(stopPhotos).length === 0))
+    ) return
     console.log(`continuing with iterateSpotlight: ${JSON.stringify({stopPhotos})}`)
 
     // pick params for new spotlight
-    const spotlightStopIndex = parseInt(randomElement(Object.keys(stopPhotos)))
+    const spotlightStopIndex = onlySpotlightPhotos ?
+      parseInt(randomElement(Object.keys(stopPhotos))) : 
+      Math.floor(_stops.length * Math.random())
     const lowLevelSpotlightState = Math.random() < lowLevelSpotlightFrac
-
-    if (spotlightStopIndex === 0) throw Error(`iterateSpotlight(): cannot yet handle spotlightStopIndex === 0, need to implement conversion to directions origin data`)
 
     let spotlightConfig, newCenter, newZoom
     if (lowLevelSpotlightState) {
-      const spotlightPosition = _stops[spotlightStopIndex].labelPosition
-      const spotlightProps = lowLevelSpotlightProps[spotlightPosition]
-      const nominalCenter = directionsResults[0].routes[0].legs[spotlightStopIndex - 1].end_location // TODO: fix this
+      const spotlightSpot = _stops[spotlightStopIndex]
+      const spotlightProps = lowLevelSpotlightProps[spotlightSpot.labelPosition]
+    
+      const nominalCenter = new google.maps.LatLng(spotlightSpot.position)
       newCenter = new google.maps.LatLng(nominalCenter.lat() + spotlightProps.offset.lat, nominalCenter.lng() + spotlightProps.offset.lng)
       newZoom = lowLevelSpotlightConfig.zoom
+      
       spotlightConfig = {
         ...lowLevelSpotlightConfig,
         size: spotlightProps.size,
         margin: spotlightProps.margin
       }
-      // console.log(`setting spotlightConfig: ${JSON.stringify({ spotlightPosition, spotlightConfig })}`)
     } else {
       spotlightConfig = randomElement(highLevelSpotlightConfigs)
       newCenter = new google.maps.LatLng(directionsCenter.lat() + spotlightConfig.mapOffset.lat, directionsCenter.lng() + spotlightConfig.mapOffset.lng)
@@ -650,12 +663,14 @@ class DrivingMap extends Slide {
     // update spotlight
     currentMap.setZoom(directionsZoom) // always zoom out before panning
     await Bluebird.delay(250)
-
     this.createMapMarkers(spotlightStopIndex)
+
+    // handle new spotlight media before zooming
     if (photoInterval) clearInterval(photoInterval)
     this.iteratePhoto(spotlightStopIndex)
     const newPhotoInterval = setInterval(this.iteratePhoto.bind(this), photoDuration*1000)
 
+    // finish moving to new spotlight
     currentMap.panTo(newCenter)
     await Bluebird.delay(250)
     currentMap.setZoom(newZoom)
@@ -755,22 +770,32 @@ class DrivingMap extends Slide {
     }
 
     let spotlightElement = ''
-    if (spotlightPhotoUrl && spotlightConfig) {
+    if (spotlightConfig) {
       const spotlightPadding = parseInt(_spotlightConfig.padding)
       const spotlightHeaderHeight = parseInt(_spotlightConfig.headerHeight)
       const spotlightImageMaxHeight = window.innerHeight * parseFloat(_spotlightConfig.size.height)/100 - 2*spotlightPadding - spotlightHeaderHeight
       const spotlightImageMaxWidth = window.innerWidth * parseFloat(_spotlightConfig.size.width)/100 - 2*spotlightPadding
 
-      // console.log(`calculated max dimensions: ${JSON.stringify({ 
-      //   _spotlightConfig, 
-      //   spotlightPadding, 
-      //   spotlightHeaderHeight, 
-      //   innerHeight: window.innerHeight, 
-      //   innerWidth: window.innerWidth,
-      //   spotlightImageMaxHeight, 
-      //   spotlightImageMaxWidth
-      // })}`)
+      const stop = _stops[spotlightStopIndex]
 
+      const spotlightTitleText = stop.locationText || stop.location
+      let spotlightSubtitleText
+      if (stop.startDate && stop.endDate) spotlightSubtitleText = `${stop.startDate} - ${stop.endDate}`
+      else if (stop.startDate) spotlightSubtitleText = stop.startDate
+
+      const spotlightMediaElement = spotlightPhotoUrl ? 
+        (
+          <DynamicImage 
+            src={spotlightPhotoUrl}
+            maxWidth={spotlightImageMaxWidth}
+            maxHeight={spotlightImageMaxHeight}
+          />
+        ) : (
+          <div>
+            test media!
+          </div>
+        )
+      
       spotlightElement = (
         <div 
           class='driving-map-spotlight-container'
@@ -781,17 +806,15 @@ class DrivingMap extends Slide {
               class='driving-map-spotlight-header'
               style={{ height: _spotlightConfig.headerHeight }}
             >
-              {_stops[spotlightStopIndex].locationText}
+              <div class='driving-map-spotlight-title'>{spotlightTitleText}</div>
+              <div class='driving-map-spotlight-subtitle'>{spotlightSubtitleText}</div>
             </div>
+            
             <div 
-              class='driving-map-spotlight-carousel'
+              class='driving-map-spotlight-media'
               style={{ padding: _spotlightConfig.padding }}
             >
-              <DynamicImage 
-                src={spotlightPhotoUrl}
-                maxWidth={spotlightImageMaxWidth}
-                maxHeight={spotlightImageMaxHeight}
-              />
+              {spotlightMediaElement}
             </div>
           </div>
         </div>
