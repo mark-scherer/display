@@ -454,7 +454,7 @@ class DrivingMap extends Slide {
                 directionsResults.push(segmentDirectionsResult)
                 resolve()
               }
-              else reject(`error getting directions segment ${directionsIndex}: ${ segmentDirectionsStatus }`)
+              else reject(`error getting directions segment ${directionsIndex}: ${JSON.stringify({segmentDirectionsStatus, originStop, destinationStop, waypointStops})}`)
             })
           })
         })
