@@ -175,6 +175,9 @@ html, body, #root, .App, .display, .slide-carousel-container, .slide-carousel-co
   width: fit-content;
   height: fit-content;
 }
+.driving-map-spotlight-anniversary, .driving-map-spotlight-anniversary * {
+  background: lemonchiffon !important;
+}
 .driving-map-spotlight-header {
   font-size: large;
   padding: 5px 5px 0;

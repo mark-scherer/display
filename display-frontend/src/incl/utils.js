@@ -42,6 +42,19 @@ const weightedRandomElement = function(list, weights) {
   return list[pickedIndex]
 }
 
+const shuffle = function(list) {
+  const result = JSON.parse(JSON.stringify(list))
+  let currentIndex = result.length
+  while (currentIndex > 0) {
+    const randomIndex = Math.floor(Math.random() * currentIndex)
+    currentIndex -= 1
+    const tmp = result[randomIndex]
+    result[randomIndex] = result[currentIndex]
+    result[currentIndex] = tmp
+  }
+  return result
+}
+
 const chunk = function(list, chunkSize, repeatSplitElements=false) {
   let result = []
   let chunkStart = 0
@@ -99,6 +112,30 @@ const secsTilNextTimeOccurance = function(startDatetime, targetDatetime) {
   return result
 }
 
+/*
+  Determine if today lies as an anniversary between startDate & endDate.
+  If endDate null, just checks startDate exactly.
+  startDate & endDate should be strings
+*/
+const isAnniversary = function(startDateString, endDateString) {
+  let anniversary = false
+  const today = new Date()
+  
+  if (startDateString && endDateString) {
+    let testDate = new Date(startDateString)
+    const endDate = new Date(endDateString)
+    while (testDate.valueOf() <= endDate.valueOf()) {
+      if (testDate.getDate() === today.getDate() && testDate.getMonth() === today.getMonth()) anniversary = true
+      testDate.setDate(testDate.getDate() + 1)
+    }
+  } else if (startDateString) {
+    const startDate = new Date(startDateString)
+    anniversary = startDate.getDate() === today.getDate() && startDate.getMonth() === today.getMonth()
+  }
+
+  return anniversary
+}
+
 const colorScale = function(colors, frac) {
   const scale = chroma.scale(colors)
   return scale(frac).hex()
@@ -129,12 +166,14 @@ export {
   randomIndex,
   randomElement,
   weightedRandomElement,
+  shuffle,
   chunk,
 
   convertTime,
   roundTime,
   timeDiffInSecs,
   secsTilNextTimeOccurance,
+  isAnniversary,
 
   colorScale,
 

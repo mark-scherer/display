@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Promise as Bluebird } from 'bluebird'
-import { randomElement, loadGoogleMapsLib, chunk } from '../../incl/utils.js'
+import { randomElement, loadGoogleMapsLib, shuffle, chunk, isAnniversary } from '../../incl/utils.js'
 import Slide from './Slide.js';
 import DynamicImage from '../DynamicImage.js'
 
@@ -125,6 +125,7 @@ class DrivingMap extends Slide {
 
       // rendering state variables
       _stops: JSON.parse(JSON.stringify(stops)), // we need to add a few fields
+      orderedSpotlightIndices: [],
       directionsCenter: null,
       directionsZoom: null,
       lowLevelSpotlightState: false, // currently zoomed in or zoomed out spotlight? Always start with zoomed out
@@ -581,12 +582,53 @@ class DrivingMap extends Slide {
     })
   }
 
-  async iterateSpotlight() {
+  /*
+    Helper to pick order for spotlights. Retuns list of ordered stop indices.
+    Should only be called once all spolights from previous call iterated thru.
+  */
+  orderSpotlightIndices() {
     const {
+      onlySpotlightPhotos,
+      spotlightAnniversariesFirst
+    } = this.props
+    
+    const {
+      stopPhotos,
+      _stops
+    } = this.state
+
+    const eligibleStopIndices = onlySpotlightPhotos ?
+      Object.keys(stopPhotos).map(key => parseInt(key)) :
+      [...Array(_stops.length).keys()]
+
+    const shuffledIndices = shuffle(eligibleStopIndices)
+
+    // pull out prioritized spotlight stops
+      // we want to shuffle first so if multiple prioritized, given in random order
+    let prioritized = []
+    if (spotlightAnniversariesFirst) {
+      shuffledIndices.forEach(index => {
+        const stop = _stops[index]
+        if (isAnniversary(stop.startDate, stop.endDate)) prioritized.push(index)
+      })
+    }
+
+    // move prioritized dates to the front
+    prioritized.forEach(prioritizedStopIndex => {
+      const indexInShuffled = shuffledIndices.indexOf(prioritizedStopIndex)
+      shuffledIndices.splice(indexInShuffled, 1)
+    })
+
+    return prioritized.concat(shuffledIndices)
+  }
+
+  async iterateSpotlight() {
+    let {
       google,
       maps,
       directionsResults,
       _stops,
+      orderedSpotlightIndices,
       directionsCenter,
       directionsZoom,
       markers,
@@ -633,17 +675,15 @@ class DrivingMap extends Slide {
       !directionsResults.length || !markers ||
       (onlySpotlightPhotos && (!stopPhotos || Object.keys(stopPhotos).length === 0))
     ) return
-    console.log(`continuing with iterateSpotlight: ${JSON.stringify({stopPhotos})}`)
 
     // pick params for new spotlight
-    const spotlightStopIndex = onlySpotlightPhotos ?
-      parseInt(randomElement(Object.keys(stopPhotos))) : 
-      Math.floor(_stops.length * Math.random())
+    if (!orderedSpotlightIndices.length) orderedSpotlightIndices = this.orderSpotlightIndices(_stops)
+    const spotlightStopIndex = orderedSpotlightIndices.shift()
+    const spotlightSpot = _stops[spotlightStopIndex]
     const lowLevelSpotlightState = Math.random() < lowLevelSpotlightFrac
 
     let spotlightConfig, newCenter, newZoom
     if (lowLevelSpotlightState) {
-      const spotlightSpot = _stops[spotlightStopIndex]
       const spotlightProps = lowLevelSpotlightProps[spotlightSpot.labelPosition]
     
       const nominalCenter = new google.maps.LatLng(spotlightSpot.position)
@@ -677,6 +717,7 @@ class DrivingMap extends Slide {
     currentMap.setZoom(newZoom)
 
     this.setState({
+      orderedSpotlightIndices,
       lowLevelSpotlightState,
       spotlightStopIndex,
       spotlightConfig,
@@ -762,7 +803,8 @@ class DrivingMap extends Slide {
     const {
       title,
       defaultSpotlightConfig,
-      darkMode
+      darkMode,
+      spotlightAnniversariesFirst
     } = this.props
 
     const _spotlightConfig = {
@@ -777,12 +819,17 @@ class DrivingMap extends Slide {
       const spotlightImageMaxHeight = window.innerHeight * parseFloat(_spotlightConfig.size.height)/100 - 2*spotlightPadding - spotlightHeaderHeight
       const spotlightImageMaxWidth = window.innerWidth * parseFloat(_spotlightConfig.size.width)/100 - 2*spotlightPadding
 
-      const stop = _stops[spotlightStopIndex]
+      const spotlightStop = _stops[spotlightStopIndex]
 
-      const spotlightTitleText = stop.locationText || stop.location
+      const anniversary = isAnniversary(spotlightStop.startDate, spotlightStop.endDate)
+      const yearsAgo = (new Date()).getFullYear() - (new Date(spotlightStop.startDate)).getFullYear()
+
+      const spotlightTitleText = spotlightStop.locationText || spotlightStop.location
       let spotlightSubtitleText
-      if (stop.startDate && stop.endDate) spotlightSubtitleText = `${stop.startDate} - ${stop.endDate}`
-      else if (stop.startDate) spotlightSubtitleText = stop.startDate
+      if (spotlightStop.startDate && spotlightStop.endDate) spotlightSubtitleText = `${spotlightStop.startDate} - ${spotlightStop.endDate}`
+      else if (spotlightStop.startDate) spotlightSubtitleText = spotlightStop.startDate
+
+      if (anniversary) spotlightSubtitleText += ` - ${yearsAgo} years ago today`
 
       const spotlightMediaElement = spotlightPhotoUrl ? 
         (
@@ -802,7 +849,7 @@ class DrivingMap extends Slide {
           class='driving-map-spotlight-container'
           style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
         >
-          <div className={`driving-map-spotlight ${darkMode ? 'darkMode' : 'lightMode'}`}>
+          <div className={`driving-map-spotlight ${darkMode ? 'darkMode' : 'lightMode'} ${spotlightAnniversariesFirst && anniversary ? 'driving-map-spotlight-anniversary' : ''}`}>
             <div 
               class='driving-map-spotlight-header'
               style={{ height: _spotlightConfig.headerHeight }}
