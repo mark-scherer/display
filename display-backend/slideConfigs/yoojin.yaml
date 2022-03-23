@@ -57,7 +57,7 @@ slides:
       headerHeight: 40px
 
     # some map options
-    mapType: ROADMAP
+    mapType: TERRAIN
     downsampleRate: 0.001
 
     stops:
