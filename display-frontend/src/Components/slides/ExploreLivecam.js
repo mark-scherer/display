@@ -268,7 +268,7 @@ class ExploreLivecam extends Slide {
     } = this.state
     
     try {
-      const google = await loadGoogleMapsLib(serverUrl, 'beta')
+      const google = await loadGoogleMapsLib(serverUrl)
       const map = new google.maps.Map(document.getElementById(MAP_ELEMENT_ID), {
         center: { lat: 37.77, lng: -122.39 },
         zoom: 8,

@@ -141,7 +141,8 @@ const colorScale = function(colors, frac) {
   return scale(frac).hex()
 }
 
-const loadGoogleMapsLib = async function(serverUrl, version='weekly') {
+const GOOGLE_VERSION = 'beta' // need to hardcode, can't have mulitiple slides call with different version so must force it here
+const loadGoogleMapsLib = async function(serverUrl) {
 
   let google
   try {
@@ -151,7 +152,7 @@ const loadGoogleMapsLib = async function(serverUrl, version='weekly') {
 
     const loader = new Loader({ 
       apiKey: mapsApiKey,
-      version
+      version: GOOGLE_VERSION
     })
     google = await loader.load()
   } catch (error) {
