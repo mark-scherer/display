@@ -3,14 +3,14 @@
 duration: 300
 slides:
   - type: DrivingMap
-    duration: 60
+    duration: 40
     title: Beth & Randy's Big Trip!
 
     # spotlight options
     spotlightDuration: 20
     onlySpotlightPhotos: false
     anniversarySpotlightFrac: 0.33 # fraction of spotlights any anniversaries will be shown
-    photoDuration: 15
+    photoDuration: 10
     lowLevelSpotlightFrac: 0.5
 
     lowLevelSpotlightConfig:
