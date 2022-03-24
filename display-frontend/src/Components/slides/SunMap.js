@@ -206,19 +206,25 @@ class SunMap extends Slide {
     const yday = new Date(today)
     yday.setDate(today.getDate() - 1)
 
-    let sunData = {
-      originLocation: {
-        today: await this.getOneSunData(originLocation.lat, originLocation.lng, today),
-        yday: await this.getOneSunData(originLocation.lat, originLocation.lng, yday)
+    // this api bans frequently (clears in 24 hrs) so need this to not crash the display
+    try {
+      let sunData = {
+        originLocation: {
+          today: await this.getOneSunData(originLocation.lat, originLocation.lng, today),
+          yday: await this.getOneSunData(originLocation.lat, originLocation.lng, yday)
+        }
       }
+      await Bluebird.map(otherLocations, async locationInfo => {
+        sunData[locationInfo.name] = await this.getOneSunData(locationInfo.lat, locationInfo.lng, today)
+      })
+  
+      this.setState({
+        sunData
+      })
+    } catch (error) {
+      if (!error.toString().includes('Failed to fetch')) throw error
     }
-    await Bluebird.map(otherLocations, async locationInfo => {
-      sunData[locationInfo.name] = await this.getOneSunData(locationInfo.lat, locationInfo.lng, today)
-    })
-
-    this.setState({
-      sunData
-    })
+    
   }
 
   async getWeatherData() {
