@@ -1,0 +1,139 @@
+# documentation config
+# NOT TO BE RUN!
+# Documents all available options for all supported slides, including example values.
+---
+duration: 30    # mandatory, default duration for each slide to be shown
+
+darkMode:     # optional darkMode params (not implemented by all slides)
+  start: 22:00    # HH:MM time to start darkMode each day
+  end: 7:00     # HH:MM time to end darkMode each day
+
+slides:
+  
+
+  # slide to display driving directions on a dynamic map, optionally highlighting individual stops
+  - type: DrivingMap    
+    duration: 40    # option override of slide duration
+    title: Beth & Randy's Big Trip!       # displayed title for map
+
+    # spotlight options
+    spotlightDuration: 20       # duration to display each highlighted stop
+    onlySpotlightPhotos: false      # if true, only highlight stops with pics specified with photosBucket & photosDir fields
+    anniversarySpotlightFrac: 0.33    # fraction of spotlights any anniversaries will be shown
+    photoDuration: 10     # duration to show each spotlight media
+    lowLevelSpotlightFrac: 0.5      # fraction of spotlights to be 'low-level', or zoomed into stop vs zoomed out with entire route in view
+
+    lowLevelSpotlightConfig:    # single config for how to display 'low-level' (zoomed in) spotlights 
+      zoom: 7     # map zoom for low-level spotlights (https://developers.google.com/maps/documentation/javascript/reference/map#Map.setZoom)
+      size:     # max size for spotlight media as a percentage of screen dims
+        height: 85%
+        width: 55%
+      mapOffset:    # magntitude to offset stoplighted stop to allow more room for spotlight media
+        lat: 2
+        lng: 3
+      margin:     # distance to offset spotlight from nearby screen edge - values used depends on spotlight's screen position
+        top: 60px
+        bottom: 10px
+        left: 20px
+        right: 50px 
+
+    highLevelSpotlightConfigs:    # list of configs for how to display 'hight-level' (zoomed out) spotlights - one will be chose randomly for each spotlight
+      - mapOffset:    # magntitude to offset stoplighted stop to allow more room for spotlight media
+          lat: 3
+          lng: 0
+        size:     # max size for spotlight media as a percentage of screen dims
+          height: 40%
+          width: 35%
+        margin:     # distance to offset spotlight from nearby screen edge - values used depends on spotlight's screen position
+          top: 20px
+          right: 50px 
+      - mapOffset:
+          lat: -3
+          lng: 0
+        size:
+          height: 35%
+          width: 40%
+        margin:
+          bottom: 20px
+          left: 20px
+
+    defaultSpotlightConfig:   # properties to apply to all spotlight configs, high or low level
+      padding: 5px      # padding to include within spotlight element around spotlight media - weird implementation but must be specified here
+      headerHeight: 45px    # height of spotlight header above spotlight media - weird implementation but must be specified here
+
+    # some map options
+    mapType: TERRAIN    # background map type (https://developers.google.com/maps/documentation/javascript/reference/map#MapTypeId)
+    downsampleRate: 0.001     # fraction of directions route waypoints to keep when downsampling - they're incredibly dense and take up many 10's MBs of mem
+
+    stops:    # list of stops to route between, in order
+
+      - location: Long Beach, CA    # location name to pass to google maps directions router
+        startDate: 3/24/91      # option date to display and for calculation anniversaries
+        labelPosition: 'northwest'    # direction relative to stop to display label
+        labelText: 'Start: 3/24/91'     # optional override of label text to display
+        type: major     # promenince of label, major / minor
+        labelMarkerMargin: 12     # option override of distance between stop marker & label
+        photosBucket: display-photos    # optional GCP bucket to search for stop's spotlight photos
+        photosDir: bethRandyBikeTrip    # optional GCP dir to search for stop's spotlight photos
+      
+      - location: San Diego, CA
+        startDate: 3/26/91
+        labelPosition: 'west'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Henderson, KY
+        startDate: 5/4/91
+        labelPosition: 'north'
+        type: major
+        labelText: 'End: 5/4/91'
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+
+
+  # slide to display world map with current sunlight distribution and interesting current conditions in specific locations
+  - type: SunMap
+    mapSource: opentopia    # source of background sunmap, see class for supported options (many apis have banned us)
+    dawnDuskDurationMins: 60    # duration on either side of sunrise/sunset to display dawn/dusk colors for a location
+    weatherDuration: 3600     # duration between fetching updated weather data
+    detailModeDuration: 5     # duration to display each type of location data before cycling
+    
+    originLocation:     # config for map 'origin' location
+      timezone: America/Kentucky/Louisville     # tz database timezone name for location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+      lat: 38.44
+      lng: -85.61
+    
+    otherLocations:     # other locations to display on the map
+      # family cities
+      - name: San Francisco     # label text for location
+        timezone: America/Los_Angeles     # tz database timezone name for location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+        labelLocation: west     # direction of label relative to location marker
+        lat: 37.77
+        lng: -122.39
+      - name: Dallas
+        timezone: America/Chicago
+        labelLocation: south
+        lat: 32.84
+        lng: -96.78
+      - name: DC
+        timezone: America/New_York
+        labelLocation: east
+        lat: 38.87
+        lng: -77.06
+
+     
+  # slide to display random explore.org nature livecam   
+  - type: ExploreLivecam
+    feedDuration: 30    # duration to show one livecam feed
+    detailDuration: 10    # duration for each feed fact shown in corner
+    startInFactMode: true     # if true, first detail shown is fact - otherwise map shown first
+    mapMaxZoom: 10    # starting zoom of feed map (https://developers.google.com/maps/documentation/javascript/reference/map#Map.setZoom)
+    mapMinZoom: 3     # ending zoom of feed map
+    feedRefreshDuration: 7200     # duration before re-fetching list of active livefeeds
+
+
+  # slide to display custom message
+  - type: Message
+    msg: test!    # message to display
+    background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'    # slide background as the css property (https://developer.mozilla.org/en-US/docs/Web/CSS/background)

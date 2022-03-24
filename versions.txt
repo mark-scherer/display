@@ -1,0 +1,80 @@
+##### version history #####
+
+### v1 ###
+  - initial release: included ExploreLivecam, SunMap & DrivingMap slides
+
+  v1.0: 12/25/21, fc1decdc1e38bb73589e5f128ed9bbcaa56cccab=
+    - initial release
+
+  v1.1: 12/29/21, 100849eec7b2ff7e0e43577ec0b7261c00675770
+    - ExploreLivecam improvements
+      - added livestream's current time and weather to info box
+      - picked next livestream radnomly weighted but number of viewers, previous was completely random
+      - added interval to refresh available livestream
+    - SunMap improvements
+      - rounded displayed sunrise, solar noon, sunset and day length to nearest minute
+      - color coded points on map according to local dawm/day/dusk/night status
+      - added timeouts to refresh sundata at every night at midnight local
+    - fixed bug in backend's generated GCP signed url that caused them to timeout after ~10 mins
+    - attempted to add google analytics
+    - fixed module export style casuing frontend build bug
+
+    v1.1.1: 12/30/21, 613e07a7877d07f3c6ac1b30b887bdc7826a9324
+      - fixed GA tracking
+
+    v1.1.2: 12/31/21, 1f8727a04f73b3f71b753ed6dc04b6bde6c4dd6a
+      - fixed sunmap error fetching sundata with invalid date
+
+  v1.2: 01/01/22, 77d41532b8bc83e8a7a4b87aeae6148579c8ba9d
+      - updated slide strucutre
+        - now slides dislay in carousel side-by-side, meaning 'displayed === false' slides still have html rendered
+          - this allows single google maps load at startup as opposed to with each time slide displayed
+        - added slideWidth & slideHeight as standard slide properties alongside displayed
+      - ExploreLivecam: 
+        - added map to alternate with facts
+        - fixed various bugs with feed, fact intervals not clearing properly
+      - page resizing improvements
+        - now display component reacts to page resizes and updates slideWidth, slideHeight slide props
+        - DynamicImage now properly reacts to maxWidth, maxHeight updates after image load
+        
+    v1.2.1: 01/01/22, 2764f2af3f8a76e8bd7ca85e921e467264c5c8ea
+      - fixed config issue left over from dev
+    
+  v1.3: 01/02/22, d358fbb4a92e46decd70f46258c4aa09e7e1c969
+    - restructured backend 
+      - split into slideRouters and utilRouters
+      - added backend utils file
+      - added body parsing
+    - implemented a weather api
+    - SunMap improvements: added weather data
+    - ExploreLivecam bug fixes: 
+      - zoom animation & fact/map alternation issues
+      - feed info padding issue
+
+    v1.3.1: 01/02/2022, 87158ad7e94c881ab6959ea6920e19192f597603
+      - updated randy's SunMap city list
+
+  v1.4: 01/04/22, fcd60a9a8b1a6d372b3fcffec75ca133e38216b5
+    - SunMap improvements
+      - improved temp-based location styling for better readability
+      - added feelsLike detailMode, interval to switch detailMode
+      - updated currentTime, sunData boxes to show originLocation timezone not device local timezone
+
+  v1.5: 01/07/22, 781cfffea1cf10b6bbfbcf930b03478a00da87f0
+    - added darkMode to display
+      - calculates at startup and schedules intervals to switch based on config times
+      - passes as standard prop to all slides
+    - DrivingMap improvements: implemented darkMode
+
+  v1.6: 03/23/22, ccf3e3e467618aded438b43911b863294ddc237a
+    - DrivingMap improvements
+      - 10x reduction in mem usage to allow long-term usage (>1wk) on fire tablet
+      - support for unlimited number of stops (previous limit: 25)
+      - special anniversary spotlighting
+      - dynamic map type (terrain, road, etc) & minor restyling
+      - support for non-photo spotlight media
+    - updated randy's slide package: added bike trip DrivingMap
+    - various bug fixes:
+      - issue determining darkMode hours
+      - crash from tmp ban from SunMap api
+      - crash from instantiating google maps lib from multiple slides
