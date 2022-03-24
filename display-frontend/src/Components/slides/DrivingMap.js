@@ -589,7 +589,7 @@ class DrivingMap extends Slide {
   orderSpotlightIndices() {
     const {
       onlySpotlightPhotos,
-      spotlightAnniversariesFirst
+      anniversarySpotlightFrac
     } = this.props
     
     const {
@@ -605,21 +605,30 @@ class DrivingMap extends Slide {
 
     // pull out prioritized spotlight stops
       // we want to shuffle first so if multiple prioritized, given in random order
-    let prioritized = []
-    if (spotlightAnniversariesFirst) {
-      shuffledIndices.forEach(index => {
-        const stop = _stops[index]
-        if (isAnniversary(stop.startDate, stop.endDate)) prioritized.push(index)
-      })
-    }
-
-    // move prioritized dates to the front
-    prioritized.forEach(prioritizedStopIndex => {
-      const indexInShuffled = shuffledIndices.indexOf(prioritizedStopIndex)
-      shuffledIndices.splice(indexInShuffled, 1)
+    let prioritizedSpotlightIndices = []
+    shuffledIndices.forEach(index => {
+      const stop = _stops[index]
+      if (isAnniversary(stop.startDate, stop.endDate)) prioritizedSpotlightIndices.push(index)
     })
 
-    return prioritized.concat(shuffledIndices)
+    // sprinkle in prioritizedSpotlightIndices at specified frequency
+    let result = []
+    if (anniversarySpotlightFrac > 0) {
+      // first remove prioritizedSpotlightIndices from shuffledIndices
+      prioritizedSpotlightIndices.forEach(prioritizedStopIndex => {
+        const indexInShuffled = shuffledIndices.indexOf(prioritizedStopIndex)
+        shuffledIndices.splice(indexInShuffled, 1)
+      })
+
+      const spotlightsBetweenAnniversaries = Math.round(1/anniversarySpotlightFrac) - 1 // needs minus 1 for behavior to be intuitive
+      shuffledIndices.forEach((spotlightIndex, iterationIndex) => {
+        if (iterationIndex % spotlightsBetweenAnniversaries === 0) result.push(...prioritizedSpotlightIndices)
+        result.push(spotlightIndex)
+      })
+    } else result = shuffledIndices
+    
+
+    return result
   }
 
   async iterateSpotlight() {
@@ -803,8 +812,7 @@ class DrivingMap extends Slide {
     const {
       title,
       defaultSpotlightConfig,
-      darkMode,
-      spotlightAnniversariesFirst
+      darkMode
     } = this.props
 
     const _spotlightConfig = {
@@ -849,7 +857,7 @@ class DrivingMap extends Slide {
           class='driving-map-spotlight-container'
           style={{ height: _spotlightConfig.size.height, width: _spotlightConfig.size.width, ..._spotlightConfig.margin }}
         >
-          <div className={`driving-map-spotlight ${darkMode ? 'darkMode' : 'lightMode'} ${spotlightAnniversariesFirst && anniversary ? 'driving-map-spotlight-anniversary' : ''}`}>
+          <div className={`driving-map-spotlight ${darkMode ? 'darkMode' : 'lightMode'} ${anniversary ? 'driving-map-spotlight-anniversary' : ''}`}>
             <div 
               class='driving-map-spotlight-header'
               style={{ height: _spotlightConfig.headerHeight }}
