@@ -2,12 +2,304 @@
 ---
 duration: 300
 slides:
-  - type: Message
-    msg: Merry Christmas Dad!
-    background: 'linear-gradient(to bottom right, #ed8282, #82eda4)'
-    duration: 5
+  - type: DrivingMap
+    duration: 60
+    title: Beth & Randy's Big Trip!
+
+    # spotlight options
+    spotlightDuration: 20
+    onlySpotlightPhotos: false
+    anniversarySpotlightFrac: 0.33 # fraction of spotlights any anniversaries will be shown
+    photoDuration: 15
+    lowLevelSpotlightFrac: 0.5
+
+    lowLevelSpotlightConfig:
+      zoom: 7
+      size:
+        height: 85%
+        width: 55%
+      mapOffset:
+        lat: 2
+        lng: 3
+      margin:
+        top: 60px
+        bottom: 10px
+        left: 20px
+        right: 50px 
+
+    highLevelSpotlightConfigs:
+      - mapOffset:
+          lat: 3
+          lng: 0
+        size:
+          height: 40%
+          width: 35%
+        margin:
+          top: 20px
+          right: 50px 
+      - mapOffset:
+          lat: -3
+          lng: 0
+        size:
+          height: 35%
+          width: 40%
+        margin:
+          bottom: 20px
+          left: 20px
+
+    defaultSpotlightConfig:
+      padding: 5px
+      headerHeight: 45px
+
+    # some map options
+    mapType: TERRAIN
+    downsampleRate: 0.001
+
+    stops:
+
+      - location: Long Beach, CA
+        startDate: 3/24/91
+        labelPosition: 'northwest'
+        labelText: 'Start: 3/24/91'
+        type: major
+        labelMarkerMargin: 12
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Oceanside, CA
+        startDate: 3/25/91
+        labelPosition: 'west'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: San Diego, CA
+        startDate: 3/26/91
+        labelPosition: 'west'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Alpine, CA
+        startDate: 3/27/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Pine Valley, CA
+        startDate: 3/28/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: El Centro, CA
+        startDate: 3/29/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Yuma, AZ
+        startDate: 3/30/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Dateland, AZ
+        startDate: 4/1/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Gila Bend, AZ
+        startDate: 4/2/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Casa Grande, AZ
+        startDate: 4/3/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Tuscon, AZ
+        startDate: 4/4/91
+        labelPosition: 'southwest'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Bensen, AZ
+        startDate: 4/5/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Tombstone, AZ
+        startDate: 4/6/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Road Fork, NM
+        startDate: 4/7/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Deming, NM
+        startDate: 4/8/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Los Cruces, NM
+        startDate: 4/9/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+
+      - location: El Paso, TX
+        startDate: 4/11/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Corniudas, TX
+        startDate: 4/12/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: White City, NM
+        startDate: 4/13/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Hobbs, NM
+        startDate: 4/15/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Lamesa, TX
+        startDate: 4/16/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Roby, TX
+        startDate: 4/17/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Albany, TX
+        startDate: 4/18/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Graham, TX
+        startDate: 4/19/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Jacksboro, TX
+        startDate: 4/20/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Denton, TX
+        startDate: 4/21/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Greenville, TX
+        startDate: 4/22/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Mt Pleasant, TX
+        startDate: 4/23/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Texarkana, AR
+        startDate: 4/24/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: El Dorado, AR
+        startDate: 4/25/91
+        labelPosition: 'north'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Hamburg, AR
+        startDate: 4/26/91
+        labelPosition: 'south'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+
+      - location: Greenville, MS
+        startDate: 4/27/91
+        labelPosition: 'southeast'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Batesville, MS
+        startDate: 4/29/91
+        labelPosition: 'southeast'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Holly Springs, MS
+        startDate: 4/30/91
+        labelPosition: 'east'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+
+      - location: Lexington, TN
+        startDate: 5/1/91
+        labelPosition: 'west'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      
+      - location: Murray, KY
+        startDate: 5/2/91
+        labelPosition: 'west'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Princeton, KY
+        startDate: 5/3/91
+        labelPosition: 'southeast'
+        type: minor
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+      - location: Henderson, KY
+        startDate: 5/4/91
+        labelPosition: 'north'
+        type: major
+        labelText: 'End: 5/4/91'
+        photosBucket: display-photos
+        photosDir: bethRandyBikeTrip
+
   - type: SunMap
-    duration: 15
+    duration: 20
     mapSource: opentopia
     dawnDuskDurationMins: 60
     weatherDuration: 3600
